@@ -1,0 +1,1982 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f1f8ee">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="个人阅读笔记">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
+  <title>个人阅读笔记</title>
+  <style>
+    :root {
+      --ink: #342d27;
+      --muted: rgba(52, 45, 39, .66);
+      --paper: #f1f8ee;
+      --card: rgba(241, 248, 238, .94);
+      --line: #c7e6e9;
+      --accent: #5fb7b5;
+      --accent-dark: #3b8584;
+      --green: #3b8584;
+      --shadow: 0 12px 36px rgba(52, 45, 39, .10);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(205, 233, 248, .95), transparent 32rem),
+        var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 48px 0 24px; }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .14em; }
+    h1 { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(34px, 6vw, 58px); font-weight: 500; letter-spacing: -.04em; }
+    .subtitle { margin: 10px 0 0; color: var(--muted); }
+    .toolbar { display: flex; gap: 12px; align-items: center; margin: 22px 0 16px; }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .search { flex: 1; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(241, 248, 238, .88); color: var(--ink); }
+    .primary, .secondary, .danger, .icon-button {
+      border-radius: 12px;
+      padding: 11px 16px;
+      border: 1px solid transparent;
+    }
+    .primary { background: var(--accent); color: var(--ink); }
+    .primary:hover { background: var(--accent-dark); color: white; }
+    .secondary { background: var(--card); color: var(--ink); border-color: var(--line); }
+    .danger { background: transparent; color: #a43e35; border-color: #d9aaa4; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+    .tab { white-space: nowrap; padding: 8px 13px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); }
+    .tab.active { color: white; background: var(--green); }
+    .count { margin-left: 5px; opacity: .7; }
+    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 18px 0 70px; }
+    .book-card { min-height: 190px; padding: 22px; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); transition: transform .15s ease, border-color .15s ease; }
+    .book-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .book-mark, .book-cover { width: 48px; height: 64px; margin-bottom: 20px; border-radius: 4px 9px 9px 4px; box-shadow: inset 5px 0 rgba(0, 0, 0, .09); }
+    .book-mark { display: grid; place-items: center; color: var(--ink); background: var(--accent); font: 22px Georgia, serif; }
+    .book-cover { display: block; object-fit: cover; background: #cde9f8; }
+    .book-title { margin: 0; font: 500 22px/1.25 Georgia, "Songti SC", serif; }
+    .book-author { margin: 7px 0 8px; color: var(--muted); }
+    .book-activity { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge { padding: 4px 8px; border-radius: 999px; background: #c7e6e9; color: var(--ink); font-size: 12px; }
+    .badge.favorite { background: #cde9f8; color: var(--ink); }
+    .empty { display: grid; place-items: center; min-height: 260px; text-align: center; color: var(--muted); }
+    .empty strong { display: block; margin-bottom: 7px; color: var(--ink); font: 500 24px Georgia, "Songti SC", serif; }
+    .hidden { display: none !important; }
+    .guest-mode .owner-only { display: none !important; }
+
+    .detail { padding-bottom: 70px; }
+    .back { border: 0; background: transparent; color: var(--accent-dark); padding: 18px 0; }
+    .detail-head { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; padding: 25px 0 30px; border-bottom: 1px solid var(--line); }
+    .detail-head h2 { margin: 0 0 8px; font: 500 clamp(32px, 6vw, 48px)/1.1 Georgia, "Songti SC", serif; }
+    .detail-head p { margin: 0; color: var(--muted); }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .note-list { display: grid; gap: 14px; margin-top: 20px; }
+    .note { position: relative; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+    .note-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-right: 38px; color: var(--muted); font-size: 13px; }
+    .note-type { color: var(--green); font-weight: 700; }
+    .note-text { margin: 14px 0 0; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .note-quote { margin: 14px 0 0; padding: 10px 14px; border-left: 3px solid var(--accent); color: var(--ink); background: rgba(205, 233, 248, .55); line-height: 1.65; white-space: pre-wrap; }
+    .note-source { margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .note-source a { color: var(--accent-dark); }
+    .note-images { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .note-images img { width: 128px; height: 128px; object-fit: cover; border: 1px solid var(--line); border-radius: 10px; cursor: zoom-in; }
+    .note-images img.large { width: min(100%, 680px); height: auto; cursor: zoom-out; }
+    .comment-images img { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .comment-images.sorting img { transition: transform .12s ease, opacity .12s ease; }
+    .comment-images img.sorting-image { cursor: grabbing; opacity: .68; transform: scale(.95); }
+    .note-translation { position: relative; margin: 16px 0 64px; padding: 14px 16px 20px; border-radius: 10px; background: #c7e6e9; transition: padding .22s ease, box-shadow .22s ease; }
+    .note-translation:not([open]) { padding-block: 6px; box-shadow: inset 0 -3px rgba(59, 133, 132, .16); }
+    .note-translation summary { position: absolute; left: 0; right: 0; bottom: -54px; height: 60px; cursor: pointer; list-style: none; z-index: 1; }
+    .note-translation summary::-webkit-details-marker { display: none; }
+    .note-translation summary::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 6px; border-radius: 999px; background: var(--accent-dark); box-shadow: 0 2px 4px rgba(52, 45, 39, .14); }
+    .note-translation summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
+    .translation-knot { position: absolute; left: 50%; top: 0; width: 52px; height: 58px; transform: translateX(-50%) scale(.707); transform-origin: 50% 0; overflow: visible; pointer-events: none; filter: drop-shadow(0 3px 3px rgba(52, 45, 39, .22)); }
+    .translation-knot path { fill: none; stroke: var(--accent-dark); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+    .translation-knot .knot-back { stroke: #342d27; }
+    .translation-knot .knot-front { stroke: var(--accent-dark); }
+    .translation-knot .translation-tail { stroke: var(--accent-dark); stroke-width: 4; transform-box: fill-box; transform-origin: top center; animation: cord-sway 2.8s ease-in-out infinite; }
+    .note-translation p { margin: 0; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @keyframes cord-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+    @media (prefers-reduced-motion: reduce) { .translation-knot .translation-tail { animation: none; } }
+    .note-comment-text { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .owner-comment-entry { position: relative; margin-top: 16px; padding: 14px 34px 0 0; border-top: 1px solid var(--line); }
+    .owner-comment-entry .note-comment-text { margin: 0; padding: 0; border: 0; }
+    .owner-comment-entry .note-images { margin-top: 10px; }
+    .delete-owner-comment { position: absolute; top: 10px; right: 0; padding: 2px 4px; border: 0; color: #a43e35; background: transparent; font: inherit; cursor: pointer; }
+    .visitor-comments { display: grid; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .visitor-comment { display: flex; gap: 10px; align-items: flex-start; }
+    .visitor-avatar { flex: 0 0 34px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: white; background: #5fb7b5; font-weight: 700; }
+    .visitor-comment-body { min-width: 0; padding-top: 5px; }
+    .visitor-comment-body p { margin: 0; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .visitor-comment-body time { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .note-comment { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .note-comment textarea { min-height: 64px; background: #f1f8ee; }
+    .comment-image-preview { display: flex; gap: 8px; flex-wrap: wrap; }
+    .comment-image-preview img { width: 64px; height: 64px; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; }
+    .note-comment-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .comment-image-picker { display: inline-flex; align-items: center; width: auto; margin: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: var(--card); cursor: pointer; }
+    .comment-image-picker input { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+    .send-comment { display: grid; place-items: center; width: 50px; height: 42px; padding: 0; }
+    .send-comment svg { width: 19px; height: 19px; }
+    .send-comment[aria-busy="true"] { cursor: wait; opacity: .72; }
+    .send-comment[aria-busy="true"] svg { display: none; }
+    .send-comment[aria-busy="true"]::after { content: ""; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: comment-spin .7s linear infinite; }
+    @keyframes comment-spin { to { transform: rotate(360deg); } }
+    .note-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+    .text-button { border: 0; background: transparent; color: #a43e35; padding: 4px; }
+    .comment-toggle { color: var(--accent-dark); }
+    .translate-note { margin-right: auto; color: var(--green); }
+    .delete-note { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; color: white; background: #b64034; font-weight: 700; line-height: 32px; text-align: center; }
+
+    .knowledge { margin-top: 22px; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: rgba(199, 230, 233, .34); }
+    .knowledge-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+    .knowledge-head h3 { margin: 2px 0 5px; font: 500 26px Georgia, "Songti SC", serif; }
+    .knowledge-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .knowledge-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .knowledge-map { padding-top: 20px; }
+    .knowledge-center { width: min(360px, 100%); margin: 0 auto; padding: 16px 18px; border: 2px solid var(--accent); border-radius: 16px; text-align: center; background: var(--card); box-shadow: var(--shadow); }
+    .knowledge-center strong { display: block; font: 500 20px Georgia, "Songti SC", serif; }
+    .knowledge-center span, .knowledge-summary { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .knowledge-links { position: relative; display: flex; gap: 12px; margin-top: 28px; padding: 28px 2px 6px; overflow-x: auto; }
+    .knowledge-links::before { content: ""; position: absolute; top: 0; left: 50%; height: 20px; border-left: 1px solid var(--accent); }
+    .knowledge-links::after { content: ""; position: absolute; top: 19px; left: 7%; right: 7%; border-top: 1px solid var(--accent); }
+    .knowledge-node { position: relative; flex: 1 0 170px; max-width: 240px; min-height: 126px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+    .knowledge-node::before { content: ""; position: absolute; top: -10px; left: 50%; height: 10px; border-left: 1px solid var(--accent); }
+    .knowledge-open { width: 100%; height: 100%; padding: 16px; border: 0; border-radius: inherit; color: inherit; background: transparent; text-align: left; }
+    .knowledge-node-title { display: block; padding-right: 22px; font-weight: 700; line-height: 1.4; }
+    .knowledge-node-meta, .knowledge-node-reason { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .knowledge-kind { display: inline-block; margin-bottom: 8px; padding: 3px 7px; border-radius: 999px; color: var(--green); background: #c7e6e9; font-size: 11px; font-weight: 700; }
+    .knowledge-shelf { display: inline-block; margin: 0 0 8px 5px; padding: 3px 7px; border-radius: 999px; color: white; background: var(--green); font-size: 11px; font-weight: 700; }
+    .delete-related { position: absolute; top: 10px; right: 10px; z-index: 1; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; color: #8f4038; background: #f5dfdc; line-height: 24px; }
+    .knowledge-empty { margin: 18px 0 2px; padding: 18px; border: 1px dashed var(--accent); border-radius: 14px; color: var(--muted); text-align: center; }
+
+    dialog { width: min(560px, calc(100% - 28px)); max-height: calc(100vh - 40px); padding: 0; border: 0; border-radius: 18px; color: var(--ink); background: var(--paper); box-shadow: 0 28px 90px rgba(52, 45, 39, .25); }
+    dialog::backdrop { background: rgba(52, 45, 39, .45); backdrop-filter: blur(3px); }
+    .dialog-body { padding: 24px; overflow-y: auto; }
+    .dialog-title { margin: 0 0 20px; font: 500 28px Georgia, "Songti SC", serif; }
+    label { display: grid; gap: 7px; margin: 14px 0; color: var(--ink); font-size: 14px; }
+    input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #f1f8ee; }
+    textarea { min-height: 120px; resize: vertical; }
+    .checkbox { display: flex; align-items: center; gap: 9px; }
+    .checkbox input { width: auto; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+    .hint { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .backup-bar { display: flex; gap: 8px; justify-content: center; padding: 0 0 36px; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 10; transform: translateX(-50%); padding: 10px 15px; border-radius: 999px; color: white; background: rgba(52, 45, 39, .92); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 650px) {
+      header { padding-top: 30px; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .toolbar-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .detail-head { flex-direction: column; }
+      .head-actions { justify-content: flex-start; }
+      .knowledge-head { flex-direction: column; }
+      .knowledge-actions { justify-content: flex-start; }
+      .book-grid { grid-template-columns: 1fr; }
+      .backup-bar { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="libraryView">
+      <header>
+        <p class="eyebrow">Personal Reading Notes</p>
+        <h1>个人阅读笔记</h1>
+        <p class="subtitle">书、划线和那些值得留下的评论。</p>
+      </header>
+
+      <div class="toolbar">
+        <input id="searchInput" class="search" type="search" placeholder="搜索书名或作者" aria-label="搜索书名或作者">
+        <div class="toolbar-actions owner-only">
+          <button id="syncShelfButton" class="secondary" type="button">↻ 同步微信读书</button>
+          <button id="addBookButton" class="primary" type="button">＋ 添加书籍</button>
+        </div>
+      </div>
+      <nav id="tabs" class="tabs" aria-label="书架筛选"></nav>
+      <section id="bookGrid" class="book-grid" aria-live="polite"></section>
+      <section id="emptyState" class="empty hidden">
+        <div><strong>这里还没有书</strong><span>点击“添加书籍”建立你的第一本阅读档案。</span></div>
+      </section>
+      <div class="backup-bar owner-only">
+        <button id="exportButton" class="secondary" type="button">导出备份</button>
+        <button id="importButton" class="secondary" type="button">导入备份</button>
+        <input id="importInput" class="hidden" type="file" accept="application/json,.json">
+      </div>
+    </section>
+
+    <section id="detailView" class="detail hidden">
+      <button id="backButton" class="back" type="button">← 返回书架</button>
+      <div class="detail-head">
+        <div>
+          <h2 id="detailTitle"></h2>
+          <p id="detailAuthor"></p>
+        </div>
+        <div class="head-actions owner-only">
+          <button id="syncNotesButton" class="secondary hidden" type="button">↻ 同步本书笔记</button>
+          <button id="addNoteButton" class="primary" type="button">＋ 添加内容</button>
+          <button id="editBookButton" class="secondary" type="button">编辑书籍</button>
+          <button id="deleteBookButton" class="danger" type="button">删除书籍</button>
+        </div>
+      </div>
+      <section id="noteList" class="note-list"></section>
+      <section id="noteEmpty" class="empty hidden">
+        <div><strong>还没有内容</strong><span>添加一条划线、书评或收藏的他人评论。</span></div>
+      </section>
+      <section class="knowledge" aria-labelledby="knowledgeTitle">
+        <div class="knowledge-head">
+          <div>
+            <h3 id="knowledgeTitle">思链</h3>
+            <p id="knowledgeMeta">从这本书连接到相关书籍和影视作品。</p>
+          </div>
+          <div class="knowledge-actions owner-only">
+            <button id="syncRelatedButton" class="secondary" type="button">↻ 生成相关阅读</button>
+            <button id="addRelatedButton" class="secondary" type="button">＋ 关联影视/作品</button>
+          </div>
+        </div>
+        <div id="knowledgeMap" class="knowledge-map"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="bookDialog">
+    <form id="bookForm" class="dialog-body">
+      <h2 id="bookDialogTitle" class="dialog-title">添加书籍</h2>
+      <label>书名<input id="bookTitle" autocomplete="off" required></label>
+      <label>作者<input id="bookAuthor" autocomplete="off" placeholder="可不填"></label>
+      <label>阅读状态
+        <select id="bookReadingStatus">
+          <option value="reading">正在读</option>
+          <option value="finished">已读完</option>
+          <option value="none">暂未开始</option>
+        </select>
+      </label>
+      <label class="checkbox"><input id="bookFavorite" type="checkbox"> 已收藏</label>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog="bookDialog">取消</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="noteDialog">
+    <form id="noteForm" class="dialog-body">
+      <h2 class="dialog-title">添加内容</h2>
+      <label>类型
+        <select id="noteType">
+          <option value="highlight">划线</option>
+          <option value="my_review">我的书评</option>
+          <option value="external_review">他人书评</option>
+        </select>
+      </label>
+      <label>章节或位置<input id="noteChapter" autocomplete="off" placeholder="可不填"></label>
+      <label>文字内容<textarea id="noteText" placeholder="如果上传了截图，这里可以不填"></textarea></label>
+      <div id="sourceFields" class="hidden">
+        <label>评论作者或来源<input id="noteSourceAuthor" autocomplete="off" placeholder="例如：某位读者"></label>
+        <label>来源链接<input id="noteSourceUrl" type="url" autocomplete="off" placeholder="https://…"></label>
+      </div>
+      <label>截图<input id="noteImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
+      <p id="storageHint" class="hint">一次最多 5 张，每张不超过 8 MB。本地版保存在浏览器；云端版会同步到你的私人存储。</p>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog="noteDialog">取消</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="relatedDialog">
+    <form id="relatedForm" class="dialog-body">
+      <h2 class="dialog-title">关联一部作品</h2>
+      <label>类型
+        <select id="relatedKind">
+          <option value="movie">电影</option>
+          <option value="series">剧集</option>
+          <option value="documentary">纪录片</option>
+          <option value="book">书籍</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label>作品名<input id="relatedTitle" autocomplete="off" required></label>
+      <label>作者、导演或主创<input id="relatedCreator" autocomplete="off" placeholder="可不填"></label>
+      <label>为什么相关<textarea id="relatedReason" maxlength="500" placeholder="例如：讲述同一段历史，提供另一种视角"></textarea></label>
+      <label>链接<input id="relatedUrl" type="url" autocomplete="off" placeholder="https://…（可不填）"></label>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog="relatedDialog">取消</button>
+        <button class="primary" type="submit">保存关联</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script>
+    const DB_NAME = "reading-archive";
+    const DB_VERSION = 1;
+    const STORE_NAME = "library";
+    const STATE_KEY = "state";
+    const GUEST_TOKEN = new URLSearchParams(location.search).get("guest") || "";
+    const GUEST_COMMENT_CACHE_KEY = "weread-guest-comments";
+    const guestMode = Boolean(GUEST_TOKEN);
+    const NOTE_LABELS = { highlight: "划线", my_review: "我的书评", external_review: "他人书评" };
+    const READING_LABELS = { reading: "正在读", finished: "已读完", none: "暂未开始" };
+    const RELATED_LABELS = { book: "书籍", movie: "电影", series: "剧集", documentary: "纪录片", other: "其他" };
+    const FILTERS = [
+      ["reading", "正在读"],
+      ["favorite", "已收藏"],
+      ["finished", "已读完"],
+      ["all", "全部"]
+    ];
+
+    let state = { books: [], updatedAt: "" };
+    let activeFilter = "reading";
+    let activeBookId = null;
+    let editingBookId = null;
+    let searchQuery = "";
+    let cloudStorage = false;
+    let cloudEtag = "";
+    let commentImageDrag = null;
+    let suppressImageClickUntil = 0;
+    let guestNickname = "";
+    let guestComments = [];
+    let saveChain = Promise.resolve();
+    let localStateAhead = false;
+    const imageUploads = new Map();
+
+    const $ = (selector) => document.querySelector(selector);
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+    })[character]);
+    const formatDate = (value) => new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(value));
+    const isWereadHighlight = (note) => note?.origin === "weread" && note?.type === "highlight";
+    const safeUrl = (value) => {
+      try {
+        const url = new URL(value);
+        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+      } catch { return ""; }
+    };
+    const safeRelatedUrl = (value) => {
+      try {
+        const url = new URL(value);
+        return ["http:", "https:", "weread:"].includes(url.protocol) ? url.href : "";
+      } catch { return ""; }
+    };
+    const fromTimestamp = (value) => {
+      const number = Number(value);
+      return number > 0 ? new Date(number > 1e12 ? number : number * 1000).toISOString() : new Date().toISOString();
+    };
+    const optionalTimestamp = (value) => Number(value) > 0 ? fromTimestamp(value) : "";
+    const bookRecency = (book) => new Date(book.lastReadAt || book.lastNoteAt || book.createdAt || 0).getTime() || 0;
+    const bookActivityLabel = (book) => book.lastReadAt
+      ? `最近阅读 ${formatDate(book.lastReadAt)}`
+      : (book.lastNoteAt ? `最近笔记 ${formatDate(book.lastNoteAt)}` : "");
+    const unwrap = (result) => result?.data && typeof result.data === "object" ? result.data : result;
+
+    async function callWeRead(api_name, parameters = {}, wereadAccountId = "") {
+      const response = await fetch("/api/weread", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_name, ...parameters, ...(wereadAccountId ? { wereadAccountId } : {}) }),
+      });
+      const result = await response.json();
+      if (result.upgrade_info) throw new Error(result.upgrade_info.message || "微信读书 Skill 需要升级");
+      if (!response.ok || Number(result.errcode || 0) !== 0) {
+        throw new Error(result.error || result.errmsg || "微信读书数据获取失败");
+      }
+      return unwrap(result);
+    }
+
+    async function getWereadAccounts() {
+      const config = await fetch("/api/config").then((response) => response.json());
+      const accounts = Array.isArray(config.wereadAccounts) && config.wereadAccounts.length
+        ? config.wereadAccounts
+        : (config.wereadAccountId ? [{ id: config.wereadAccountId, label: "微信读书账号" }] : []);
+      if (!config.wereadConfigured || accounts.length === 0) throw new Error("请先配置微信读书 API Key");
+      return accounts;
+    }
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function readLocalState() {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).get(STATE_KEY);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function writeLocalState(value) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const request = db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).put(value, STATE_KEY);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    const stateUpdatedAt = (value) => Date.parse(value?.updatedAt || "") || 0;
+    const newestState = (remote, local) => local && stateUpdatedAt(local) > stateUpdatedAt(remote) ? local : remote;
+
+    async function cacheCurrentState() {
+      state.updatedAt = new Date().toISOString();
+      await writeLocalState(structuredClone(state));
+    }
+
+    function guestEndpoint(path) {
+      return `${path}?guest=${encodeURIComponent(GUEST_TOKEN)}`;
+    }
+
+    function normalizeImage(image) {
+      if (/^[a-f0-9]{64}$/.test(String(image?.imageId || ""))) return {
+        imageId: String(image.imageId),
+        name: String(image.name || "图片").slice(0, 200),
+        type: /^image\/(png|jpeg|webp|gif)$/i.test(image.type || "") ? String(image.type).toLowerCase() : "",
+      };
+      if (/^data:image\/(png|jpeg|webp|gif);base64,/i.test(image?.dataUrl || "")) return {
+        name: String(image.name || "图片").slice(0, 200),
+        dataUrl: image.dataUrl,
+      };
+      return null;
+    }
+
+    function imageSource(image) {
+      if (/^data:image\/(png|jpeg|webp|gif);base64,/i.test(image?.dataUrl || "")) return image.dataUrl;
+      if (!/^[a-f0-9]{64}$/.test(String(image?.imageId || ""))) return "";
+      const path = `/api/images/${image.imageId}`;
+      return guestMode ? guestEndpoint(path) : path;
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl || "");
+      if (!match) throw new Error("图片数据格式不正确，请重新选择。");
+      const bytes = Uint8Array.from(atob(match[2]), (character) => character.charCodeAt(0));
+      return new Blob([bytes], { type: match[1].toLowerCase() });
+    }
+
+    async function uploadImage(image) {
+      const normalized = normalizeImage(image);
+      if (!normalized || normalized.imageId || !cloudStorage) return normalized;
+      const blob = dataUrlToBlob(normalized.dataUrl);
+      const response = await fetch("/api/images", {
+        method: "POST",
+        headers: {
+          "Content-Type": blob.type,
+          "X-Image-Name": encodeURIComponent(normalized.name),
+        },
+        body: blob,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.image) throw new Error(result.error || "图片上传失败，请稍后重试。");
+      return result.image;
+    }
+
+    async function uploadImages(images = []) {
+      return Promise.all(images.map((image) => {
+        if (!image?.dataUrl) return uploadImage(image);
+        if (!imageUploads.has(image.dataUrl)) {
+          imageUploads.set(image.dataUrl, uploadImage(image).catch((error) => {
+            imageUploads.delete(image.dataUrl);
+            throw error;
+          }));
+        }
+        return imageUploads.get(image.dataUrl);
+      }));
+    }
+
+    function hasInlineImages(value) {
+      return value.books?.some((book) => book.notes?.some((note) =>
+        note.images?.some((image) => image?.dataUrl)
+        || note.comments?.some((comment) => comment.images?.some((image) => image?.dataUrl))
+      ));
+    }
+
+    async function externalizeStateImages(value) {
+      const jobs = [];
+      value.books.forEach((book) => book.notes.forEach((note) => {
+        if (note.images?.length) jobs.push(uploadImages(note.images).then((images) => { note.images = images; }));
+        note.comments?.forEach((comment) => {
+          if (comment.images?.length) jobs.push(uploadImages(comment.images).then((images) => { comment.images = images; }));
+        });
+      }));
+      await Promise.all(jobs);
+      return value;
+    }
+
+    async function makePortableBackup(value) {
+      const copy = structuredClone(value);
+      const jobs = [];
+      copy.books.forEach((book) => book.notes.forEach((note) => {
+        const embed = async (images = []) => Promise.all(images.map(async (image) => {
+          if (image.dataUrl) return image;
+          const response = await fetch(imageSource(image));
+          if (!response.ok) throw new Error(`无法下载备份图片：${image.name || "图片"}`);
+          return { name: image.name || "图片", dataUrl: await readFileAsDataUrl(await response.blob()) };
+        }));
+        if (note.images?.length) jobs.push(embed(note.images).then((images) => { note.images = images; }));
+        note.comments?.forEach((comment) => {
+          if (comment.images?.length) jobs.push(embed(comment.images).then((images) => { comment.images = images; }));
+        });
+      }));
+      await Promise.all(jobs);
+      return copy;
+    }
+
+    function mergeGuestComments(...collections) {
+      return [...new Map(collections.flat().filter((comment) => comment?.id).map((comment) => [comment.id, comment])).values()]
+        .sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
+    }
+
+    function requireGuestNickname() {
+      const saved = localStorage.getItem("weread-guest-nickname") || "";
+      if ([...saved].length === 1) return saved;
+      while (true) {
+        const value = prompt("请输入一个字的昵称");
+        if (value === null) throw new Error("访客需要输入一个字的昵称才能进入。");
+        const nickname = value.trim();
+        if ([...nickname].length === 1) {
+          localStorage.setItem("weread-guest-nickname", nickname);
+          return nickname;
+        }
+        alert("昵称只能输入一个字。");
+      }
+    }
+
+    async function loadGuestComments() {
+      const endpoint = guestMode ? guestEndpoint("/api/guest-comments") : "/api/guest-comments";
+      const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("无法读取访客评论");
+      const remote = await response.json();
+      let cached = [];
+      if (guestMode) {
+        try { cached = JSON.parse(localStorage.getItem(GUEST_COMMENT_CACHE_KEY) || "[]"); } catch { /* 忽略损坏的本机缓存。 */ }
+      }
+      guestComments = mergeGuestComments(remote.comments || [], cached);
+    }
+
+    async function loadState() {
+      if (guestMode) {
+        const response = await fetch(guestEndpoint("/api/guest-state"), { headers: { Accept: "application/json" } });
+        if (!response.ok) throw new Error(response.status === 401 ? "访客链接无效或已经失效。" : "无法读取共享书架");
+        return response.json();
+      }
+      const remote = await fetch("/api/state", { headers: { Accept: "application/json" } });
+      if (remote.ok) {
+        cloudStorage = true;
+        cloudEtag = remote.headers.get("ETag") || "";
+        const remoteState = await remote.json();
+        const localState = await readLocalState().catch(() => null);
+        localStateAhead = Boolean(localState && stateUpdatedAt(localState) > stateUpdatedAt(remoteState));
+        return newestState(remoteState, localState);
+      }
+      if (remote.status !== 404) throw new Error(remote.status === 401 ? "登录已过期，请刷新页面重新登录" : "无法读取云端数据");
+      return await readLocalState() || { books: [], updatedAt: "" };
+    }
+
+    async function saveStateNow({ silentConflict = false } = {}) {
+      if (guestMode) throw new Error("访客不能修改书架内容。");
+      state.updatedAt = new Date().toISOString();
+      if (cloudStorage) {
+        const response = await fetch("/api/state", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(cloudEtag ? { "If-Match": cloudEtag } : { "If-None-Match": "*" }),
+          },
+          body: JSON.stringify(state),
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          const message = result.error || (response.status === 409
+            ? "云端数据已在另一台设备更新。请刷新页面，再重新操作。"
+            : "保存云端数据失败，请稍后重试。");
+          const error = new Error(message);
+          error.status = response.status;
+          error.currentState = result.currentState;
+          error.currentEtag = response.headers.get("ETag") || "";
+          if (!silentConflict || response.status !== 409) {
+            alert(message);
+            error.shown = true;
+          }
+          throw error;
+        }
+        cloudEtag = response.headers.get("ETag") || cloudEtag;
+        await writeLocalState(state).catch((error) => console.warn("无法更新本机云端副本", error));
+        return;
+      }
+      return writeLocalState(state);
+    }
+
+    function saveState(options = {}) {
+      const operation = saveChain.then(() => saveStateNow(options));
+      saveChain = operation.catch(() => {});
+      return operation;
+    }
+
+    async function reconcileNewerLocalState() {
+      if (!localStateAhead || guestMode || !cloudStorage) return;
+      localStateAhead = false;
+      const localState = structuredClone(state);
+      try {
+        await saveState({ silentConflict: true });
+      } catch (error) {
+        if (error.status === 409 && error.currentEtag && stateUpdatedAt(localState) > stateUpdatedAt(error.currentState)) {
+          cloudEtag = error.currentEtag;
+          state = localState;
+          await saveState();
+        } else {
+          console.warn("本机更新将在下次打开时继续同步", error);
+        }
+      }
+    }
+
+    function toast(message) {
+      const element = $("#toast");
+      element.textContent = message;
+      element.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => element.classList.remove("show"), 1800);
+    }
+
+    function matchesFilter(book, filter) {
+      if (filter === "favorite") return book.favorite;
+      if (filter === "all") return true;
+      return book.readingStatus === filter;
+    }
+
+    function renderTabs() {
+      $("#tabs").innerHTML = FILTERS.map(([key, label]) => {
+        const count = state.books.filter((book) => matchesFilter(book, key)).length;
+        return `<button class="tab ${key === activeFilter ? "active" : ""}" type="button" data-filter="${key}">${label}<span class="count">${count}</span></button>`;
+      }).join("");
+    }
+
+    function renderLibrary() {
+      renderTabs();
+      const needle = searchQuery.trim().toLocaleLowerCase();
+      const books = state.books.filter((book) => matchesFilter(book, activeFilter) &&
+        (!needle || `${book.title} ${book.author}`.toLocaleLowerCase().includes(needle)))
+        .sort((left, right) => bookRecency(right) - bookRecency(left));
+      const grid = $("#bookGrid");
+      grid.innerHTML = books.map((book) => {
+        const noteCount = Array.isArray(book.notes) ? book.notes.length : 0;
+        const cover = safeUrl(book.cover);
+        const noteLabel = book.wereadStats?.total
+          ? `${noteCount} 条本地 · 微信读书 ${book.wereadStats.total} 条`
+          : `${noteCount} 条内容`;
+        const activityLabel = bookActivityLabel(book);
+        return `<button class="book-card" type="button" data-book-id="${book.id}">
+          ${cover ? `<img class="book-cover" src="${escapeHtml(cover)}" alt="" loading="lazy">` : `<span class="book-mark">${escapeHtml(book.title.slice(0, 1) || "书")}</span>`}
+          <h2 class="book-title">${escapeHtml(book.title)}</h2>
+          <p class="book-author">${escapeHtml(book.author || "作者未填写")}</p>
+          ${activityLabel ? `<p class="book-activity">${escapeHtml(activityLabel)}</p>` : ""}
+          <span class="badges">
+            <span class="badge">${READING_LABELS[book.readingStatus] || "暂未开始"}</span>
+            ${book.favorite ? '<span class="badge favorite">★ 已收藏</span>' : ""}
+            <span class="badge">${noteLabel}</span>
+          </span>
+        </button>`;
+      }).join("");
+      grid.classList.toggle("hidden", books.length === 0);
+      $("#emptyState").classList.toggle("hidden", books.length !== 0);
+    }
+
+    function cleanRelatedWork(work) {
+      const title = String(work?.title || "").trim();
+      if (!title) return null;
+      const kind = Object.hasOwn(RELATED_LABELS, work.kind) ? work.kind : "other";
+      return {
+        id: String(work.id || uid()),
+        kind,
+        title,
+        creator: String(work.creator || "").trim(),
+        reason: String(work.reason || "").trim().slice(0, 500),
+        cover: safeUrl(work.cover || ""),
+        url: safeRelatedUrl(work.url || ""),
+        sourceBookId: work.sourceBookId ? String(work.sourceBookId) : "",
+        origin: work.origin === "weread" ? "weread" : "manual",
+        createdAt: work.createdAt || new Date().toISOString(),
+      };
+    }
+
+    function relatedWorkKey(work) {
+      return work.sourceBookId
+        ? `book:${work.sourceBookId}`
+        : `${work.kind}:${work.title.trim().toLocaleLowerCase()}`;
+    }
+
+    function mergeRelatedWorks(book, incoming, { replaceWeread = false } = {}) {
+      const current = Array.isArray(book.relatedWorks) ? book.relatedWorks.map(cleanRelatedWork).filter(Boolean) : [];
+      const merged = replaceWeread ? current.filter((work) => work.origin !== "weread") : current;
+      const byKey = new Map(merged.map((work) => [relatedWorkKey(work), work]));
+      incoming.map(cleanRelatedWork).filter(Boolean).forEach((work) => {
+        const key = relatedWorkKey(work);
+        const existing = byKey.get(key);
+        if (existing) Object.assign(existing, work, { id: existing.id });
+        else {
+          merged.push(work);
+          byKey.set(key, work);
+        }
+      });
+      book.relatedWorks = merged.slice(0, 100);
+    }
+
+    function renderKnowledge(book) {
+      const works = Array.isArray(book.relatedWorks) ? book.relatedWorks : [];
+      const category = String(book.category || "").trim();
+      const intro = String(book.intro || "").replace(/\s+/g, " ").trim();
+      $("#knowledgeMeta").textContent = category
+        ? `类别：${category} · 已连接 ${works.length} 部作品`
+        : `已连接 ${works.length} 部作品`;
+      const center = `<article class="knowledge-center">
+        <strong>${escapeHtml(book.title)}</strong>
+        <span>${escapeHtml(book.author || "作者未填写")}${category ? ` · ${escapeHtml(category)}` : ""}</span>
+        ${intro ? `<small class="knowledge-summary">${escapeHtml(intro.slice(0, 140))}${intro.length > 140 ? "…" : ""}</small>` : ""}
+      </article>`;
+      const links = works.map((work) => {
+        const localBook = work.sourceBookId && state.books.find((item) => item.sourceBookId === work.sourceBookId);
+        const targetUrl = safeRelatedUrl(work.url);
+        const actionable = localBook || targetUrl;
+        return `<article class="knowledge-node">
+          ${guestMode ? "" : `<button class="delete-related" type="button" data-delete-related="${escapeHtml(work.id)}" aria-label="删除这个关联" title="删除这个关联">×</button>`}
+          <button class="knowledge-open" type="button" data-open-related="${escapeHtml(work.id)}" ${actionable ? "" : "disabled"}>
+            <span class="knowledge-kind">${escapeHtml(RELATED_LABELS[work.kind] || "作品")}</span>
+            ${localBook ? '<span class="knowledge-shelf">书架中</span>' : ""}
+            <strong class="knowledge-node-title">${escapeHtml(work.title)}</strong>
+            ${work.creator ? `<span class="knowledge-node-meta">${escapeHtml(work.creator)}</span>` : ""}
+            ${work.reason ? `<span class="knowledge-node-reason">${escapeHtml(work.reason)}</span>` : ""}
+          </button>
+        </article>`;
+      }).join("");
+      $("#knowledgeMap").innerHTML = center + (links
+        ? `<div class="knowledge-links">${links}</div>`
+        : '<p class="knowledge-empty">还没有关联内容。可以自动生成相关阅读，也可以添加影视作品。</p>');
+    }
+
+    function findSameBook(collection, book) {
+      return collection.find((item) => book.sourceBookId
+        ? item.sourceBookId === book.sourceBookId
+        : item.id === book.id);
+    }
+
+    async function saveCommentImageOrder(noteId, commentId, indexes) {
+      const book = state.books.find((item) => item.id === activeBookId);
+      const note = book?.notes.find((item) => item.id === noteId);
+      const ownerComment = note?.comments?.find((comment) => comment.id === commentId);
+      if (!book || !note || !ownerComment) return;
+      const previous = ownerComment.images || [];
+      let reordered;
+      try {
+        reordered = reorderCommentImages(previous, indexes);
+      } catch (error) {
+        renderDetail();
+        return alert(error.message);
+      }
+      if (reordered.every((image, index) => image === previous[index])) return;
+      ownerComment.images = reordered;
+      try {
+        await saveState({ silentConflict: true });
+        renderDetail();
+        toast("图片顺序已保存");
+      } catch (error) {
+        if (error.status === 409 && Array.isArray(error.currentState?.books) && error.currentEtag) {
+          state = normalizeBackup(error.currentState);
+          cloudEtag = error.currentEtag;
+          const latestBook = findSameBook(state.books, book);
+          const latestNote = findSameNote(latestBook, note);
+          const latestComment = latestNote?.comments?.find((comment) => comment.id === commentId);
+          if (!latestBook || !latestNote || !latestComment) {
+            renderDetail();
+            return alert("云端数据中找不到这条评论，请重新打开本书后再试。");
+          }
+          activeBookId = latestBook.id;
+          try {
+            latestComment.images = matchCommentImageOrder(latestComment.images || [], reordered);
+            await saveState();
+            renderDetail();
+            return toast("图片顺序已保存");
+          } catch (retryError) {
+            renderDetail();
+            if (!retryError.shown) alert(retryError.message);
+            return;
+          }
+        }
+        ownerComment.images = previous;
+        renderDetail();
+        if (!error.shown) alert(error.message);
+      }
+    }
+
+    async function saveBookChangeWithConflict(book, reapply) {
+      try {
+        await saveState({ silentConflict: true });
+      } catch (error) {
+        if (error.status !== 409 || !Array.isArray(error.currentState?.books) || !error.currentEtag) throw error;
+        state = normalizeBackup(error.currentState);
+        cloudEtag = error.currentEtag;
+        const latestBook = findSameBook(state.books, book);
+        if (!latestBook) throw new Error("最新云端书架中找不到这本书，请返回首页重新同步书架。");
+        activeBookId = latestBook.id;
+        reapply(latestBook);
+        await saveState();
+      }
+    }
+
+    function renderOwnerComments(note) {
+      return (note.comments || []).map((comment) => {
+        const images = (comment.images || []).filter(imageSource);
+        return `<article class="owner-comment-entry">
+          ${guestMode ? "" : `<button class="delete-owner-comment" type="button" data-delete-owner-comment="${escapeHtml(comment.id)}" data-comment-note="${escapeHtml(note.id)}" aria-label="删除这条评论" title="删除这条评论">删</button>`}
+          ${comment.text ? `<p class="note-comment-text">${escapeHtml(comment.text)}</p>` : ""}
+          ${images.length ? `<div class="note-images comment-images" data-comment-images="${escapeHtml(note.id)}" data-owner-comment="${escapeHtml(comment.id)}">${images.map((image, index) => `<img src="${escapeHtml(imageSource(image))}" alt="评论图片：${escapeHtml(image.name || "图片")}" data-image-index="${index}" draggable="false" title="长按拖动可调整顺序">`).join("")}</div>` : ""}
+        </article>`;
+      }).join("");
+    }
+
+    function renderGuestComments(noteId) {
+      const comments = guestComments.filter((comment) => comment.noteId === noteId);
+      if (!comments.length) return "";
+      return `<div class="visitor-comments">${comments.map((comment) => `<article class="visitor-comment">
+        <span class="visitor-avatar" aria-label="访客 ${escapeHtml(comment.nickname)}">${escapeHtml(comment.nickname)}</span>
+        <div class="visitor-comment-body"><p>${escapeHtml(comment.text)}</p><time>${escapeHtml(new Date(comment.createdAt).toLocaleString("zh-CN"))}</time></div>
+      </article>`).join("")}</div>`;
+    }
+
+    function renderDetail() {
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book) return showLibrary();
+      $("#detailTitle").textContent = book.title;
+      $("#detailAuthor").textContent = `${book.author || "作者未填写"} · ${READING_LABELS[book.readingStatus]}${book.favorite ? " · ★ 已收藏" : ""}`;
+      $("#syncNotesButton").classList.toggle("hidden", !book.sourceBookId || book.sourceType === "album");
+      $("#syncRelatedButton").classList.toggle("hidden", !book.sourceBookId || book.sourceType === "album");
+      renderKnowledge(book);
+      const notes = Array.isArray(book.notes) ? book.notes : [];
+      $("#noteList").innerHTML = notes.map((note) => {
+        const link = safeUrl(note.sourceUrl);
+        const images = (note.images || []).filter(imageSource);
+        return `<article class="note">
+          ${guestMode ? "" : `<button class="delete-note" type="button" data-delete-note="${note.id}" aria-label="删除这条内容" title="删除这条内容">删</button>`}
+          <div class="note-meta">
+            <span class="note-type">${NOTE_LABELS[note.type] || "内容"}</span>
+            ${note.origin === "weread" ? '<span>· 微信读书</span>' : ""}
+            ${note.chapter ? `<span>· ${escapeHtml(note.chapter)}</span>` : ""}
+            <span>· ${escapeHtml(formatDate(note.createdAt))}</span>
+          </div>
+          ${note.quote ? `<blockquote class="note-quote">${escapeHtml(note.quote)}</blockquote>` : ""}
+          ${note.text ? (isWereadHighlight(note)
+            ? `<blockquote class="note-quote">${escapeHtml(note.text)}</blockquote>`
+            : `<p class="note-text">${escapeHtml(note.text)}</p>`) : ""}
+          ${note.translation ? `<details class="note-translation" open><summary aria-label="展开或收起白话译文"><svg class="translation-knot" viewBox="0 0 56 64" aria-hidden="true" focusable="false"><path class="knot-back" d="M22 3C16 13 17 23 26 32"/><path class="knot-back" d="M34 3C40 13 39 23 30 32"/><path class="knot-front" d="M18 11C29 14 36 21 35 31C34 37 26 37 22 31"/><path class="knot-front" d="M38 10C29 17 23 23 25 32C27 37 35 36 38 30"/><path class="translation-tail" d="M29 32C28 40 27 47 31 52C33 55 37 56 40 60"/></svg></summary><p>${escapeHtml(note.translation)}</p></details>` : ""}
+          ${images.length ? `<div class="note-images">${images.map((image) => `<img src="${escapeHtml(imageSource(image))}" alt="书评截图：${escapeHtml(image.name || "图片")}" loading="lazy">`).join("")}</div>` : ""}
+          ${note.sourceAuthor || link ? `<p class="note-source">来源：${escapeHtml(note.sourceAuthor || "未注明")}${link ? ` · <a href="${escapeHtml(link)}" target="_blank" rel="noreferrer">打开原链接</a>` : ""}</p>` : ""}
+          ${renderOwnerComments(note)}
+          ${renderGuestComments(note.id)}
+          ${guestMode ? `<form class="note-comment hidden" data-guest-comment-note="${escapeHtml(note.id)}">
+            <textarea name="guestComment" maxlength="1000" aria-label="访客评论" placeholder="写下你的评论"></textarea>
+            <div class="note-comment-actions">
+              <span></span>
+              <button class="secondary send-comment" type="submit" aria-label="发送评论" title="发送评论"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3.7 21 12 3 20.3l2.3-6.8L14 12l-8.7-1.5L3 3.7Z"/></svg></button>
+            </div>
+          </form>` : `<form class="note-comment hidden" data-comment-note="${escapeHtml(note.id)}">
+            <textarea name="comment" maxlength="5000" aria-label="我的评论"></textarea>
+            <div class="comment-image-preview hidden" aria-live="polite"></div>
+            <div class="note-comment-actions">
+              <label class="comment-image-picker"><span>＋图片</span><input name="commentImages" type="file" accept="image/*" multiple></label>
+              <button class="secondary send-comment" type="submit" aria-label="发送评论" title="发送评论"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3.7 21 12 3 20.3l2.3-6.8L14 12l-8.7-1.5L3 3.7Z"/></svg></button>
+            </div>
+          </form>`}
+          <div class="note-footer">
+            ${!guestMode && note.type === "highlight" && (note.text || note.quote) ? `<button class="text-button translate-note" type="button" data-translate-note="${escapeHtml(note.id)}">${note.translation ? "重译" : "译"}</button>` : ""}
+            <button class="text-button comment-toggle" type="button" data-toggle-comment aria-expanded="false">评论</button>
+          </div>
+        </article>`;
+      }).join("");
+      $("#noteList").classList.toggle("hidden", notes.length === 0);
+      $("#noteEmpty").classList.toggle("hidden", notes.length !== 0);
+    }
+
+    function showLibrary() {
+      activeBookId = null;
+      $("#detailView").classList.add("hidden");
+      $("#libraryView").classList.remove("hidden");
+      renderLibrary();
+    }
+
+    function showDetail(bookId) {
+      activeBookId = bookId;
+      $("#libraryView").classList.add("hidden");
+      $("#detailView").classList.remove("hidden");
+      renderDetail();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openBookDialog(book = null) {
+      editingBookId = book?.id || null;
+      $("#bookDialogTitle").textContent = book ? "编辑书籍" : "添加书籍";
+      $("#bookTitle").value = book?.title || "";
+      $("#bookAuthor").value = book?.author || "";
+      $("#bookReadingStatus").value = book?.readingStatus || "reading";
+      $("#bookFavorite").checked = Boolean(book?.favorite);
+      $("#bookDialog").showModal();
+      $("#bookTitle").focus();
+    }
+
+    function toggleSourceFields() {
+      $("#sourceFields").classList.toggle("hidden", $("#noteType").value !== "external_review");
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function fileToDataUrl(file) {
+      const original = await readFileAsDataUrl(file);
+      const browserSafe = /^image\/(png|jpeg|webp|gif)$/i.test(file.type);
+      if (file.type === "image/gif" || (browserSafe && file.size <= 450 * 1024)) return { name: file.name, dataUrl: original };
+      try {
+        const image = new Image();
+        image.src = original;
+        await image.decode();
+        const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", .86);
+        return !browserSafe || dataUrl.length < original.length
+          ? { name: file.name.replace(/\.[^.]+$/, "") + ".jpg", dataUrl }
+          : { name: file.name, dataUrl: original };
+      } catch {
+        if (browserSafe) return { name: file.name, dataUrl: original };
+        throw new Error("这张图片的格式暂不支持，请先在相册中截屏后再发送。");
+      }
+    }
+
+    function mergeCommentImages(existing = [], added = []) {
+      const merged = [...existing, ...added];
+      if (merged.length > 3) throw new Error("一条评论最多发送 3 张图片。");
+      return merged;
+    }
+
+    function normalizeOwnerComments(note) {
+      const legacyImages = Array.isArray(note.commentImages) ? note.commentImages : [];
+      const source = Array.isArray(note.comments) && note.comments.length
+        ? note.comments
+        : (String(note.comment || "").trim() || legacyImages.length ? [{
+          id: `legacy-${note.id || "comment"}`,
+          text: note.comment,
+          images: legacyImages,
+          createdAt: note.createdAt,
+        }] : []);
+      return source.map((comment) => ({
+        id: String(comment.id || uid()),
+        text: String(comment.text || "").slice(0, 5000),
+        images: Array.isArray(comment.images) ? comment.images.map(normalizeImage).filter(Boolean).slice(0, 3) : [],
+        createdAt: comment.createdAt || new Date().toISOString(),
+      })).filter((comment) => comment.text.trim() || comment.images.length);
+    }
+
+    function takeOwnerComment(note, commentId) {
+      const index = note?.comments?.findIndex((comment) => comment.id === commentId) ?? -1;
+      return index < 0 ? null : { index, comment: note.comments.splice(index, 1)[0] };
+    }
+
+    function reorderCommentImages(images = [], indexes = []) {
+      const unique = new Set(indexes);
+      if (indexes.length !== images.length || unique.size !== images.length
+        || indexes.some((index) => !Number.isInteger(index) || index < 0 || index >= images.length)) {
+        throw new Error("图片顺序无效，请刷新后重试。");
+      }
+      return indexes.map((index) => images[index]);
+    }
+
+    function matchCommentImageOrder(images = [], desired = []) {
+      if (images.length !== desired.length) throw new Error("云端图片已经变化，请重新排序。");
+      const remaining = [...images];
+      return desired.map((wanted) => {
+        const index = remaining.findIndex((image) => String(image.name || "") === String(wanted.name || "")
+          && (image.imageId ? image.imageId === wanted.imageId : image.dataUrl === wanted.dataUrl));
+        if (index < 0) throw new Error("云端图片已经变化，请重新排序。");
+        return remaining.splice(index, 1)[0];
+      });
+    }
+
+    function normalizeBackup(input) {
+      if (!input || !Array.isArray(input.books)) throw new Error("备份格式不正确");
+      return {
+        updatedAt: input.updatedAt ? String(input.updatedAt) : "",
+        books: input.books.map((book) => ({
+          id: String(book.id || uid()),
+          title: String(book.title || "").trim(),
+          author: String(book.author || "").trim(),
+          cover: safeUrl(book.cover || ""),
+          category: Array.isArray(book.category)
+            ? book.category.map((value) => String(value).trim()).filter(Boolean).join(" · ")
+            : String(book.category || "").trim(),
+          intro: String(book.intro || "").trim().slice(0, 3000),
+          sourceBookId: book.sourceBookId ? String(book.sourceBookId) : "",
+          sourceType: ["book", "album"].includes(book.sourceType) ? book.sourceType : "",
+          lastReadAt: book.lastReadAt ? String(book.lastReadAt) : "",
+          lastNoteAt: book.lastNoteAt ? String(book.lastNoteAt) : "",
+          wereadAccounts: Object.fromEntries(Object.entries(book.wereadAccounts || {})
+            .filter(([accountId, value]) => /^[a-f0-9]{16}$/.test(accountId) && value && typeof value === "object")
+            .map(([accountId, value]) => [accountId, {
+              favorite: Boolean(value.favorite),
+              readingStatus: ["reading", "finished", "none"].includes(value.readingStatus) ? value.readingStatus : "none",
+              lastReadAt: value.lastReadAt ? String(value.lastReadAt) : "",
+              lastNoteAt: value.lastNoteAt ? String(value.lastNoteAt) : "",
+              stats: {
+                highlights: Number(value.stats?.highlights || 0),
+                reviews: Number(value.stats?.reviews || 0),
+                bookmarks: Number(value.stats?.bookmarks || 0),
+              },
+            }])),
+          wereadStats: book.wereadStats && typeof book.wereadStats === "object" ? {
+            highlights: Number(book.wereadStats.highlights || 0),
+            reviews: Number(book.wereadStats.reviews || 0),
+            bookmarks: Number(book.wereadStats.bookmarks || 0),
+            total: Number(book.wereadStats.total || 0),
+          } : null,
+          readingStatus: ["reading", "finished", "none"].includes(book.readingStatus) ? book.readingStatus : "none",
+          favorite: Boolean(book.favorite),
+          createdAt: book.createdAt || new Date().toISOString(),
+          relatedWorks: Array.isArray(book.relatedWorks)
+            ? book.relatedWorks.map(cleanRelatedWork).filter(Boolean).slice(0, 100)
+            : [],
+          notes: Array.isArray(book.notes) ? book.notes.map((note) => ({
+            id: String(note.id || uid()),
+            type: Object.hasOwn(NOTE_LABELS, note.type) ? note.type : "highlight",
+            chapter: String(note.chapter || "").trim(),
+            text: String(note.text || ""),
+            quote: String(note.quote || ""),
+            comments: normalizeOwnerComments(note),
+            comment: "",
+            commentImages: [],
+            translation: String(note.translation || "").slice(0, 8000),
+            origin: note.origin === "weread" ? "weread" : "",
+            externalId: note.externalId ? String(note.externalId) : "",
+            sourceAuthor: String(note.sourceAuthor || "").trim(),
+            sourceUrl: safeUrl(note.sourceUrl || ""),
+            createdAt: note.createdAt || new Date().toISOString(),
+            images: Array.isArray(note.images) ? note.images.map(normalizeImage).filter(Boolean).slice(0, 5) : []
+          })) : []
+        })).filter((book) => book.title)
+      };
+    }
+
+    async function fetchAllNotebooks(accountId) {
+      const books = [];
+      let lastSort;
+      for (let pageNumber = 0; pageNumber < 50; pageNumber += 1) {
+        const page = await callWeRead("/user/notebooks", {
+          count: 100,
+          ...(lastSort === undefined ? {} : { lastSort }),
+        }, accountId);
+        const pageBooks = Array.isArray(page.books) ? page.books : [];
+        books.push(...pageBooks);
+        if (!page.hasMore || pageBooks.length === 0) break;
+        const nextSort = pageBooks.at(-1)?.sort;
+        if (nextSort === undefined || nextSort === lastSort) throw new Error("微信读书笔记本分页异常，请稍后再试");
+        lastSort = nextSort;
+      }
+      return books;
+    }
+
+    function upsertWereadBook(sourceBookId, values) {
+      let book = state.books.find((item) => item.sourceBookId === String(sourceBookId));
+      if (!book) {
+        book = { id: uid(), createdAt: new Date().toISOString(), relatedWorks: [], notes: [] };
+        state.books.unshift(book);
+      }
+      Object.assign(book, values, { sourceBookId: String(sourceBookId) });
+      return book;
+    }
+
+    function setWereadAccountState(book, accountId, values) {
+      book.wereadAccounts ||= {};
+      book.wereadAccounts[accountId] = {
+        favorite: Boolean(values.favorite ?? book.wereadAccounts[accountId]?.favorite),
+        readingStatus: values.readingStatus || book.wereadAccounts[accountId]?.readingStatus || "none",
+        lastReadAt: values.lastReadAt ?? book.wereadAccounts[accountId]?.lastReadAt ?? "",
+        lastNoteAt: values.lastNoteAt ?? book.wereadAccounts[accountId]?.lastNoteAt ?? "",
+        stats: values.stats || book.wereadAccounts[accountId]?.stats || { highlights: 0, reviews: 0, bookmarks: 0 },
+      };
+      const accounts = Object.values(book.wereadAccounts);
+      book.favorite = accounts.some((account) => account.favorite);
+      book.readingStatus = accounts.some((account) => account.readingStatus === "reading")
+        ? "reading"
+        : (accounts.some((account) => account.readingStatus === "finished") ? "finished" : "none");
+      book.lastReadAt = accounts.map((account) => account.lastReadAt).filter(Boolean).sort().at(-1) || "";
+      book.lastNoteAt = accounts.map((account) => account.lastNoteAt).filter(Boolean).sort().at(-1) || "";
+      book.wereadStats = accounts.reduce((total, account) => ({
+        highlights: total.highlights + Number(account.stats?.highlights || 0),
+        reviews: total.reviews + Number(account.stats?.reviews || 0),
+        bookmarks: total.bookmarks + Number(account.stats?.bookmarks || 0),
+        total: total.total + Number(account.stats?.highlights || 0) + Number(account.stats?.reviews || 0) + Number(account.stats?.bookmarks || 0),
+      }), { highlights: 0, reviews: 0, bookmarks: 0, total: 0 });
+    }
+
+    async function syncShelf() {
+      const button = $("#syncShelfButton");
+      button.disabled = true;
+      button.textContent = "正在同步…";
+      try {
+        const accounts = await getWereadAccounts();
+        let bookCount = 0;
+        let albumCount = 0;
+        let hasArticles = false;
+        for (const account of accounts) {
+          const accountId = account.id;
+          const [shelf, notebooks] = await Promise.all([
+            callWeRead("/shelf/sync", {}, accountId),
+            fetchAllNotebooks(accountId),
+          ]);
+          const shelfBooks = Array.isArray(shelf.books) ? shelf.books : [];
+          const albums = Array.isArray(shelf.albums) ? shelf.albums : [];
+          bookCount += shelfBooks.length;
+          albumCount += albums.length;
+          hasArticles ||= Boolean(shelf.mp);
+
+          state.books.filter((book) => book.sourceBookId && book.wereadAccounts?.[accountId])
+            .forEach((book) => setWereadAccountState(book, accountId, { favorite: false }));
+          shelfBooks.forEach((item) => {
+            const book = upsertWereadBook(item.bookId, {
+              title: String(item.title || "未命名书籍"),
+              author: String(item.author || ""),
+              cover: safeUrl(item.cover || ""),
+              sourceType: "book",
+            });
+            setWereadAccountState(book, accountId, {
+              favorite: true,
+              readingStatus: item.finishReading === 1 ? "finished" : (item.readUpdateTime ? "reading" : "none"),
+              lastReadAt: optionalTimestamp(item.readUpdateTime),
+            });
+          });
+
+          albums.forEach((item) => {
+            const info = item.albumInfo || {};
+            const extra = item.albumInfoExtra || {};
+            const book = upsertWereadBook("album:" + info.albumId, {
+              title: String(info.name || "未命名有声书"),
+              author: String(info.authorName || ""),
+              cover: safeUrl(info.cover || ""),
+              sourceType: "album",
+            });
+            setWereadAccountState(book, accountId, {
+              favorite: true,
+              readingStatus: info.finish === 1 ? "finished" : (extra.lectureReadUpdateTime ? "reading" : "none"),
+              lastReadAt: optionalTimestamp(extra.lectureReadUpdateTime),
+            });
+          });
+
+          notebooks.forEach((item) => {
+            const info = item.book || {};
+            const bookId = item.bookId || info.bookId;
+            if (!bookId) return;
+            const stats = {
+              highlights: Number(item.noteCount || 0),
+              reviews: Number(item.reviewCount || 0),
+              bookmarks: Number(item.bookmarkCount || 0),
+            };
+            stats.total = stats.highlights + stats.reviews + stats.bookmarks;
+            const existing = state.books.find((book) => book.sourceBookId === String(bookId));
+            const readingStatus = item.markedStatus === 1
+              ? "finished"
+              : (Number(item.readingProgress || 0) > 0 ? "reading" : (existing?.wereadAccounts?.[accountId]?.readingStatus || "none"));
+            const book = upsertWereadBook(bookId, {
+              title: String(info.title || existing?.title || "未命名书籍"),
+              author: String(info.author || existing?.author || ""),
+              cover: safeUrl(info.cover || existing?.cover || ""),
+              sourceType: "book",
+            });
+            setWereadAccountState(book, accountId, {
+              favorite: Boolean(book.wereadAccounts?.[accountId]?.favorite),
+              readingStatus,
+              lastNoteAt: optionalTimestamp(item.sort),
+              stats,
+            });
+          });
+        }
+
+        await saveState();
+        renderLibrary();
+        const articleMessage = hasArticles ? "；文章收藏入口暂不导入" : "";
+        toast("已同步 " + accounts.length + " 个账号、" + bookCount + " 本书和 " + albumCount + " 个有声书" + articleMessage);
+      } catch (error) {
+        if (!error.shown) alert(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "↻ 同步微信读书";
+      }
+    }
+
+    async function fetchAllMyReviews(bookId, accountId) {
+      const reviews = [];
+      let synckey = 0;
+      for (let pageNumber = 0; pageNumber < 100; pageNumber += 1) {
+        const page = await callWeRead("/review/list/mine", { bookid: bookId, count: 20, synckey }, accountId);
+        const pageReviews = Array.isArray(page.reviews) ? page.reviews : [];
+        reviews.push(...pageReviews);
+        if (!page.hasMore || pageReviews.length === 0) break;
+        const nextKey = Number(page.synckey || 0);
+        if (!nextKey || nextKey === synckey) throw new Error("微信读书个人书评分页异常，请稍后再试");
+        synckey = nextKey;
+      }
+      return reviews;
+    }
+
+    function mergeWereadNotes(book, incoming) {
+      const signature = (note) => [note.type, note.chapter, note.text, note.quote].map((value) => String(value || "").trim()).join("\u001f");
+      const existing = new Map(book.notes.filter((note) => note.externalId).map((note) => [note.externalId, note]));
+      const existingByContent = new Map(book.notes.filter((note) => note.origin === "weread").map((note) => [signature(note), note]));
+      incoming.forEach((note) => {
+        const old = existing.get(note.externalId) || existingByContent.get(signature(note));
+        if (old) Object.assign(old, note, { id: old.id, images: old.images || [] });
+        else {
+          book.notes.push(note);
+          existingByContent.set(signature(note), note);
+        }
+      });
+      book.notes.sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
+    }
+
+    function findSameNote(book, note) {
+      return book?.notes?.find((item) => note.externalId
+        ? item.externalId === note.externalId
+        : item.id === note.id);
+    }
+
+    function addNoteOnce(book, note) {
+      book.notes ||= [];
+      if (!findSameNote(book, note)) book.notes.unshift(note);
+    }
+
+    async function syncCurrentBookNotes() {
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book?.sourceBookId || book.sourceType === "album") return;
+      const button = $("#syncNotesButton");
+      button.disabled = true;
+      button.textContent = "正在同步…";
+      try {
+        const accounts = await getWereadAccounts();
+        const associatedAccounts = accounts.filter((account) => book.wereadAccounts?.[account.id]);
+        const targetAccounts = associatedAccounts.length ? associatedAccounts : accounts;
+        const incoming = [];
+        for (const account of targetAccounts) {
+          const accountId = account.id;
+          const [bookmarkPage, reviewItems] = await Promise.all([
+            callWeRead("/book/bookmarklist", { bookId: book.sourceBookId }, accountId),
+            fetchAllMyReviews(book.sourceBookId, accountId),
+          ]);
+          const chapterNames = new Map((bookmarkPage.chapters || []).map((chapter) => [String(chapter.chapterUid), chapter.title]));
+          incoming.push(...(bookmarkPage.updated || []).map((item) => ({
+            id: uid(),
+            externalId: "weread:" + accountId + ":bookmark:" + item.bookmarkId,
+            type: "highlight",
+            chapter: String(chapterNames.get(String(item.chapterUid)) || ""),
+            text: String(item.markText || ""),
+            quote: "",
+            origin: "weread",
+            sourceAuthor: "",
+            sourceUrl: "",
+            images: [],
+            createdAt: fromTimestamp(item.createTime),
+          })).filter((note) => note.text));
+
+          reviewItems.forEach((wrapper) => {
+            const review = wrapper.review || wrapper;
+            const text = String(review.content || "").trim();
+            const quote = String(review.abstract || "").trim();
+            if (!text && !quote) return;
+            const reviewKey = review.reviewId || (review.createTime + "-" + (review.range || "book"));
+            incoming.push({
+              id: uid(),
+              externalId: "weread:" + accountId + ":review:" + reviewKey,
+              type: "my_review",
+              chapter: String(review.chapterName || chapterNames.get(String(review.chapterUid)) || ""),
+              text,
+              quote,
+              origin: "weread",
+              sourceAuthor: "",
+              sourceUrl: "",
+              images: [],
+              createdAt: fromTimestamp(review.createTime),
+            });
+          });
+        }
+
+        mergeWereadNotes(book, incoming);
+        try {
+          await saveState({ silentConflict: true });
+        } catch (error) {
+          if (error.status !== 409 || !Array.isArray(error.currentState?.books) || !error.currentEtag) throw error;
+          state = normalizeBackup(error.currentState);
+          cloudEtag = error.currentEtag;
+          const latestBook = state.books.find((item) => item.sourceBookId === book.sourceBookId);
+          if (!latestBook) throw new Error("最新云端书架中找不到这本书，请返回首页重新同步书架。");
+          activeBookId = latestBook.id;
+          mergeWereadNotes(latestBook, incoming);
+          await saveState();
+        }
+        renderDetail();
+        toast(incoming.length ? `已同步 ${incoming.length} 条划线和想法` : "没有找到可导出的划线或想法；书签只能显示数量");
+      } catch (error) {
+        if (!error.shown) alert(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "↻ 同步本书笔记";
+      }
+    }
+
+    function categoryText(value) {
+      const values = Array.isArray(value) ? value : [value];
+      return values.map((item) => {
+        if (item && typeof item === "object") return item.title || item.name || item.category || "";
+        return String(item || "");
+      }).map((item) => String(item).trim()).filter(Boolean).join(" · ");
+    }
+
+    async function syncCurrentBookRelations() {
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book?.sourceBookId || book.sourceType === "album") return;
+      const button = $("#syncRelatedButton");
+      button.disabled = true;
+      button.textContent = "正在生成…";
+      try {
+        const accounts = await getWereadAccounts();
+        const account = accounts.find((item) => book.wereadAccounts?.[item.id]) || accounts[0];
+        const [infoResult, similarResult] = await Promise.all([
+          callWeRead("/book/info", { bookId: book.sourceBookId }, account.id),
+          callWeRead("/book/similar", { bookId: book.sourceBookId, count: 12, maxIdx: 0 }, account.id),
+        ]);
+        const info = infoResult?.bookInfo || infoResult?.book?.bookInfo || infoResult?.book || infoResult || {};
+        const category = categoryText(info.category || info.categories);
+        const intro = String(info.intro || info.description || "").trim().slice(0, 3000);
+        const wrappers = similarResult?.booksimilar?.books || similarResult?.bookSimilar?.books || similarResult?.books || [];
+        const incoming = wrappers.map((item) => {
+          const similar = item?.book?.bookInfo || item?.bookInfo || item?.book || item || {};
+          const sourceBookId = similar.bookId || item?.bookId || item?.book?.bookId;
+          return {
+            id: uid(),
+            kind: "book",
+            title: String(similar.title || "").trim(),
+            creator: String(similar.author || "").trim(),
+            reason: "微信读书相似推荐",
+            cover: safeUrl(similar.cover || ""),
+            url: safeRelatedUrl(similar.deepLink || item?.deepLink || ""),
+            sourceBookId: sourceBookId ? String(sourceBookId) : "",
+            origin: "weread",
+            createdAt: new Date().toISOString(),
+          };
+        }).filter((work) => work.title && work.sourceBookId !== book.sourceBookId);
+        const apply = (target) => {
+          if (category) target.category = category;
+          if (intro) target.intro = intro;
+          mergeRelatedWorks(target, incoming, { replaceWeread: true });
+        };
+        apply(book);
+        await saveBookChangeWithConflict(book, apply);
+        renderDetail();
+        toast(incoming.length ? `已连接 ${incoming.length} 本相关书籍` : "微信读书暂未返回相关书籍");
+      } catch (error) {
+        if (!error.shown) alert(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "↻ 生成相关阅读";
+      }
+    }
+
+    $("#addBookButton").addEventListener("click", () => openBookDialog());
+    $("#syncShelfButton").addEventListener("click", syncShelf);
+    $("#syncNotesButton").addEventListener("click", syncCurrentBookNotes);
+    $("#syncRelatedButton").addEventListener("click", syncCurrentBookRelations);
+    $("#backButton").addEventListener("click", showLibrary);
+    $("#editBookButton").addEventListener("click", () => openBookDialog(state.books.find((book) => book.id === activeBookId)));
+    $("#addNoteButton").addEventListener("click", () => {
+      $("#noteForm").reset();
+      toggleSourceFields();
+      $("#noteDialog").showModal();
+    });
+    $("#addRelatedButton").addEventListener("click", () => {
+      $("#relatedForm").reset();
+      $("#relatedKind").value = "movie";
+      $("#relatedDialog").showModal();
+      $("#relatedTitle").focus();
+    });
+    $("#noteType").addEventListener("change", toggleSourceFields);
+    $("#searchInput").addEventListener("input", (event) => { searchQuery = event.target.value; renderLibrary(); });
+    $("#tabs").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-filter]");
+      if (!button) return;
+      activeFilter = button.dataset.filter;
+      renderLibrary();
+    });
+    $("#bookGrid").addEventListener("click", (event) => {
+      const card = event.target.closest("[data-book-id]");
+      if (card) showDetail(card.dataset.bookId);
+    });
+    document.addEventListener("click", (event) => {
+      const closeButton = event.target.closest("[data-close-dialog]");
+      if (closeButton) $(`#${closeButton.dataset.closeDialog}`).close();
+      if (event.target.matches(".note-images img") && Date.now() >= suppressImageClickUntil) {
+        event.target.classList.toggle("large");
+      }
+    });
+
+    $("#bookForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = {
+        title: $("#bookTitle").value.trim(),
+        author: $("#bookAuthor").value.trim(),
+        readingStatus: $("#bookReadingStatus").value,
+        favorite: $("#bookFavorite").checked
+      };
+      if (!data.title) return;
+      if (editingBookId) {
+        Object.assign(state.books.find((book) => book.id === editingBookId), data);
+      } else {
+        state.books.unshift({ id: uid(), ...data, createdAt: new Date().toISOString(), relatedWorks: [], notes: [] });
+      }
+      await saveState();
+      $("#bookDialog").close();
+      editingBookId ? renderDetail() : renderLibrary();
+      toast("书籍已保存");
+    });
+
+    $("#noteForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (form.dataset.saving === "true") return;
+      const files = [...$("#noteImages").files];
+      if (files.length > 5) return alert("一次最多上传 5 张截图。");
+      if (files.some((file) => file.size > 12 * 1024 * 1024)) return alert("每张原图不能超过 12 MB。");
+      const text = $("#noteText").value.trim();
+      if (!text && files.length === 0) return alert("请填写文字或选择至少一张截图。");
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book) return;
+      const saveButton = form.querySelector('[type="submit"]');
+      const note = {
+        id: uid(),
+        type: $("#noteType").value,
+        chapter: $("#noteChapter").value.trim(),
+        text,
+        sourceAuthor: $("#noteSourceAuthor").value.trim(),
+        sourceUrl: safeUrl($("#noteSourceUrl").value.trim()),
+        images: [],
+        createdAt: new Date().toISOString()
+      };
+      form.dataset.saving = "true";
+      saveButton.disabled = true;
+      saveButton.textContent = "保存中…";
+      addNoteOnce(book, note);
+      await cacheCurrentState().catch((error) => console.warn("无法暂存新增内容", error));
+      $("#noteDialog").close();
+      renderDetail();
+      toast("正在保存…");
+      try {
+        note.images = await uploadImages(await Promise.all(files.map(fileToDataUrl)));
+        await cacheCurrentState().catch((error) => console.warn("无法暂存内容图片", error));
+        await saveBookChangeWithConflict(book, (latestBook) => {
+          addNoteOnce(latestBook, note);
+        });
+        renderDetail();
+        toast("内容已保存");
+      } catch (error) {
+        const currentBook = findSameBook(state.books, book);
+        if (currentBook) currentBook.notes = currentBook.notes.filter((item) => item.id !== note.id);
+        await cacheCurrentState().catch(() => {});
+        renderDetail();
+        $("#noteDialog").showModal();
+        if (!error.shown) alert(error.message || "内容保存失败，请重试。");
+      } finally {
+        delete form.dataset.saving;
+        saveButton.disabled = false;
+        saveButton.textContent = "保存";
+      }
+    });
+
+    $("#relatedForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book) return;
+      const work = cleanRelatedWork({
+        id: uid(),
+        kind: $("#relatedKind").value,
+        title: $("#relatedTitle").value,
+        creator: $("#relatedCreator").value,
+        reason: $("#relatedReason").value,
+        url: $("#relatedUrl").value,
+        origin: "manual",
+        createdAt: new Date().toISOString(),
+      });
+      if (!work) return;
+      try {
+        mergeRelatedWorks(book, [work]);
+        await saveBookChangeWithConflict(book, (latestBook) => mergeRelatedWorks(latestBook, [work]));
+        $("#relatedDialog").close();
+        renderDetail();
+        toast("作品关联已保存");
+      } catch (error) {
+        if (!error.shown) alert(error.message);
+      }
+    });
+
+    $("#knowledgeMap").addEventListener("click", async (event) => {
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book) return;
+      const deleteButton = event.target.closest("[data-delete-related]");
+      if (deleteButton) {
+        const work = book.relatedWorks?.find((item) => item.id === deleteButton.dataset.deleteRelated);
+        if (!work || !confirm(`确定删除与《${work.title}》的关联吗？`)) return;
+        const remove = (target) => {
+          target.relatedWorks = (target.relatedWorks || []).filter((item) => item.id !== work.id && relatedWorkKey(item) !== relatedWorkKey(work));
+        };
+        try {
+          remove(book);
+          await saveBookChangeWithConflict(book, remove);
+          renderDetail();
+          toast("关联已删除");
+        } catch (error) {
+          if (!error.shown) alert(error.message);
+        }
+        return;
+      }
+      const openButton = event.target.closest("[data-open-related]");
+      if (!openButton) return;
+      const work = book.relatedWorks?.find((item) => item.id === openButton.dataset.openRelated);
+      if (!work) return;
+      const localBook = work.sourceBookId && state.books.find((item) => item.sourceBookId === work.sourceBookId);
+      if (localBook) return showDetail(localBook.id);
+      const url = safeRelatedUrl(work.url);
+      if (url.startsWith("weread:")) window.location.href = url;
+      else if (url) window.open(url, "_blank", "noopener,noreferrer");
+    });
+
+    $("#noteList").addEventListener("click", async (event) => {
+      const deleteCommentButton = event.target.closest("[data-delete-owner-comment]");
+      if (deleteCommentButton) {
+        const book = state.books.find((item) => item.id === activeBookId);
+        const note = book?.notes.find((item) => item.id === deleteCommentButton.dataset.commentNote);
+        const commentId = deleteCommentButton.dataset.deleteOwnerComment;
+        const commentExists = note?.comments?.some((comment) => comment.id === commentId);
+        if (!book || !note || !commentExists || !confirm("确定删除这条评论吗？")) return;
+        const removed = takeOwnerComment(note, commentId);
+        await cacheCurrentState().catch((error) => console.warn("无法暂存删除操作", error));
+        renderDetail();
+        toast("正在删除…");
+        try {
+          await saveBookChangeWithConflict(book, (latestBook) => {
+            const latestNote = findSameNote(latestBook, note);
+            if (!latestNote) throw new Error("最新云端数据中找不到这条内容，请重新打开本书后再试。");
+            takeOwnerComment(latestNote, commentId);
+          });
+          toast("评论已删除");
+        } catch (error) {
+          const currentNote = findSameNote(findSameBook(state.books, book), note);
+          if (currentNote && !(currentNote.comments || []).some((comment) => comment.id === removed.comment.id)) {
+            currentNote.comments.splice(Math.min(removed.index, currentNote.comments.length), 0, removed.comment);
+          }
+          await cacheCurrentState().catch(() => {});
+          renderDetail();
+          if (!error.shown) alert(error.message || "删除失败，请重试。");
+        }
+        return;
+      }
+      const toggle = event.target.closest("[data-toggle-comment]");
+      if (toggle) {
+        const form = toggle.closest(".note").querySelector(".note-comment");
+        const opening = form.classList.contains("hidden");
+        form.classList.toggle("hidden", !opening);
+        toggle.textContent = opening ? "收起" : "评论";
+        toggle.setAttribute("aria-expanded", String(opening));
+        if (opening) (form.elements.comment || form.elements.guestComment).focus();
+        return;
+      }
+      const translateButton = event.target.closest("[data-translate-note]");
+      if (translateButton) {
+        const book = state.books.find((item) => item.id === activeBookId);
+        const note = book?.notes.find((item) => item.id === translateButton.dataset.translateNote);
+        if (!note) return;
+        if (note.translation && !confirm("重新翻译会替换现有白话译文，继续吗？")) return;
+        const source = [note.quote, note.text].filter(Boolean).join("\n").trim();
+        if (!source) return;
+        translateButton.disabled = true;
+        translateButton.textContent = "翻译中…";
+        let targetNote = note;
+        let previousTranslation = note.translation || "";
+        try {
+          const response = await fetch("/api/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: source }),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.translation) throw new Error(result.error || "翻译失败，请稍后再试");
+          const translation = String(result.translation).trim().slice(0, 8000);
+          targetNote.translation = translation;
+          try {
+            await saveState({ silentConflict: true });
+          } catch (error) {
+            if (error.status !== 409 || !Array.isArray(error.currentState?.books) || !error.currentEtag) throw error;
+            state = normalizeBackup(error.currentState);
+            cloudEtag = error.currentEtag;
+            const latestBook = findSameBook(state.books, book);
+            targetNote = findSameNote(latestBook, note);
+            if (!latestBook || !targetNote) throw new Error("最新云端数据中找不到这条划线，请重新打开本书后再试。");
+            activeBookId = latestBook.id;
+            previousTranslation = targetNote.translation || "";
+            targetNote.translation = translation;
+            await saveState();
+          }
+          renderDetail();
+          toast("白话译文已保存");
+        } catch (error) {
+          targetNote.translation = previousTranslation;
+          renderDetail();
+          if (!error.shown) alert(error.message);
+        }
+        return;
+      }
+      const button = event.target.closest("[data-delete-note]");
+      if (!button || !confirm("确定删除这条内容吗？")) return;
+      const book = state.books.find((item) => item.id === activeBookId);
+      const noteIndex = book?.notes.findIndex((note) => note.id === button.dataset.deleteNote) ?? -1;
+      if (!book || noteIndex < 0) return;
+      const [removedNote] = book.notes.splice(noteIndex, 1);
+      await cacheCurrentState().catch((error) => console.warn("无法暂存删除操作", error));
+      renderDetail();
+      toast("正在删除…");
+      try {
+        await saveBookChangeWithConflict(book, (latestBook) => {
+          latestBook.notes = latestBook.notes.filter((note) => note.id !== removedNote.id);
+        });
+        toast("内容已删除");
+      } catch (error) {
+        const currentBook = findSameBook(state.books, book);
+        if (currentBook && !findSameNote(currentBook, removedNote)) {
+          currentBook.notes.splice(Math.min(noteIndex, currentBook.notes.length), 0, removedNote);
+        }
+        await cacheCurrentState().catch(() => {});
+        renderDetail();
+        if (!error.shown) alert(error.message || "删除失败，请重试。");
+      }
+    });
+
+    $("#noteList").addEventListener("pointerdown", (event) => {
+      if (guestMode) return;
+      const image = event.target.closest(".comment-images img");
+      if (!image || image.classList.contains("large") || (event.pointerType === "mouse" && event.button !== 0)) return;
+      if (commentImageDrag) clearTimeout(commentImageDrag.timer);
+      const drag = {
+        image,
+        container: image.closest(".comment-images"),
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        active: false,
+        timer: null,
+      };
+      commentImageDrag = drag;
+      drag.timer = setTimeout(() => {
+        if (commentImageDrag !== drag) return;
+        drag.active = true;
+        drag.container.classList.add("sorting");
+        drag.image.classList.add("sorting-image");
+        drag.image.setPointerCapture?.(drag.pointerId);
+        navigator.vibrate?.(20);
+      }, 360);
+    });
+
+    $("#noteList").addEventListener("pointermove", (event) => {
+      const drag = commentImageDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      if (!drag.active) {
+        if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 8) {
+          clearTimeout(drag.timer);
+          commentImageDrag = null;
+        }
+        return;
+      }
+      event.preventDefault();
+      const over = document.elementFromPoint(event.clientX, event.clientY)?.closest(".comment-images img");
+      if (!over || over === drag.image || over.closest(".comment-images") !== drag.container) return;
+      const items = [...drag.container.querySelectorAll("img")];
+      const from = items.indexOf(drag.image);
+      const to = items.indexOf(over);
+      drag.container.insertBefore(drag.image, from < to ? over.nextSibling : over);
+    });
+
+    $("#noteList").addEventListener("pointerup", async (event) => {
+      const drag = commentImageDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      clearTimeout(drag.timer);
+      commentImageDrag = null;
+      if (!drag.active) return;
+      event.preventDefault();
+      suppressImageClickUntil = Date.now() + 500;
+      drag.container.classList.remove("sorting");
+      drag.image.classList.remove("sorting-image");
+      const indexes = [...drag.container.querySelectorAll("img")].map((image) => Number(image.dataset.imageIndex));
+      await saveCommentImageOrder(drag.container.dataset.commentImages, drag.container.dataset.ownerComment, indexes);
+    });
+
+    $("#noteList").addEventListener("pointercancel", (event) => {
+      const drag = commentImageDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      clearTimeout(drag.timer);
+      commentImageDrag = null;
+      if (drag.active) {
+        suppressImageClickUntil = Date.now() + 500;
+        renderDetail();
+      }
+    });
+
+    $("#noteList").addEventListener("contextmenu", (event) => {
+      if (event.target.closest(".comment-images img")) event.preventDefault();
+    });
+
+    $("#noteList").addEventListener("change", (event) => {
+      const input = event.target.closest('input[name="commentImages"]');
+      if (!input) return;
+      const form = input.closest(".note-comment");
+      const files = [...input.files];
+      form.querySelector(".comment-image-picker span").textContent = files.length ? `已选 ${files.length} 张` : "＋图片";
+      const preview = form.querySelector(".comment-image-preview");
+      preview.replaceChildren(...files.map((file) => {
+        const image = document.createElement("img");
+        const url = URL.createObjectURL(file);
+        image.src = url;
+        image.alt = "待发送图片";
+        image.onload = image.onerror = () => URL.revokeObjectURL(url);
+        return image;
+      }));
+      preview.classList.toggle("hidden", !files.length);
+    });
+
+    $("#noteList").addEventListener("submit", async (event) => {
+      const guestForm = event.target.closest("[data-guest-comment-note]");
+      if (guestForm) {
+        event.preventDefault();
+        const text = String(new FormData(guestForm).get("guestComment") || "").trim();
+        if (!text) return;
+        const sendButton = guestForm.querySelector(".send-comment");
+        sendButton.disabled = true;
+        sendButton.setAttribute("aria-busy", "true");
+        try {
+          const response = await fetch(guestEndpoint("/api/guest-comments"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ noteId: guestForm.dataset.guestCommentNote, nickname: guestNickname, text }),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.comment) throw new Error(result.error || "评论发送失败，请稍后再试。");
+          guestComments = mergeGuestComments(guestComments, [result.comment]);
+          localStorage.setItem(GUEST_COMMENT_CACHE_KEY, JSON.stringify(guestComments));
+          renderDetail();
+          toast("评论已发送");
+        } catch (error) {
+          sendButton.disabled = false;
+          sendButton.removeAttribute("aria-busy");
+          alert(error.message);
+        }
+        return;
+      }
+      const form = event.target.closest("[data-comment-note]");
+      if (!form) return;
+      event.preventDefault();
+      const book = state.books.find((item) => item.id === activeBookId);
+      const note = book?.notes.find((item) => item.id === form.dataset.commentNote);
+      if (!note) return;
+      const formData = new FormData(form);
+      const text = String(formData.get("comment") || "").trim().slice(0, 5000);
+      const files = [...form.elements.commentImages.files];
+      if (!text && !files.length) return;
+      if (files.length > 3) return alert("一条评论最多发送 3 张图片。");
+      if (files.some((file) => file.size > 8 * 1024 * 1024)) return alert("每张图片不能超过 8 MB。");
+      const sendButton = form.querySelector(".send-comment");
+      sendButton.disabled = true;
+      sendButton.setAttribute("aria-busy", "true");
+      let images = [];
+      try {
+        if (files.length) images = mergeCommentImages([], await uploadImages(await Promise.all(files.map(fileToDataUrl))));
+      } catch (error) {
+        sendButton.disabled = false;
+        sendButton.removeAttribute("aria-busy");
+        return alert(error.message || "图片读取失败，请重新选择。");
+      }
+      const newComment = { id: uid(), text, images, createdAt: new Date().toISOString() };
+      let targetNote = note;
+      targetNote.comments = [...(targetNote.comments || []), newComment];
+      try {
+        try {
+          await saveState({ silentConflict: true });
+        } catch (error) {
+          if (error.status !== 409 || !Array.isArray(error.currentState?.books) || !error.currentEtag) throw error;
+          state = normalizeBackup(error.currentState);
+          cloudEtag = error.currentEtag;
+          const latestBook = state.books.find((item) => book.sourceBookId
+            ? item.sourceBookId === book.sourceBookId
+            : item.id === book.id);
+          targetNote = findSameNote(latestBook, note);
+          if (!latestBook || !targetNote) throw new Error("最新云端数据中找不到这条内容，请重新打开本书后再试。");
+          activeBookId = latestBook.id;
+          if (!(targetNote.comments || []).some((comment) => comment.id === newComment.id)) {
+            targetNote.comments = [...(targetNote.comments || []), newComment];
+          }
+          await saveState();
+        }
+        renderDetail();
+        toast("评论已发送");
+      } catch (error) {
+        targetNote.comments = (targetNote.comments || []).filter((comment) => comment.id !== newComment.id);
+        renderDetail();
+        if (!error.shown) alert(error.message);
+      }
+    });
+
+    $("#deleteBookButton").addEventListener("click", async () => {
+      const book = state.books.find((item) => item.id === activeBookId);
+      if (!book || !confirm(`确定删除《${book.title}》及其全部内容吗？`)) return;
+      state.books = state.books.filter((item) => item.id !== activeBookId);
+      await saveState();
+      showLibrary();
+      toast("书籍已删除");
+    });
+
+    $("#exportButton").addEventListener("click", async (event) => {
+      event.currentTarget.disabled = true;
+      try {
+        const portable = await makePortableBackup(state);
+        const blob = new Blob([JSON.stringify(portable, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `阅读收藏夹备份-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        toast("备份已导出");
+      } catch (error) {
+        alert(error.message || "备份导出失败，请稍后重试。");
+      } finally {
+        event.currentTarget.disabled = false;
+      }
+    });
+    $("#importButton").addEventListener("click", () => $("#importInput").click());
+    $("#importInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024) return alert("备份文件不能超过 25 MB。");
+      try {
+        const imported = normalizeBackup(JSON.parse(await file.text()));
+        if (!confirm(`导入将替换当前的 ${state.books.length} 本书，继续吗？`)) return;
+        state = await externalizeStateImages(imported);
+        await saveState();
+        renderLibrary();
+        toast("备份已导入");
+      } catch (error) {
+        alert(`无法导入：${error.message}`);
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    function selfCheck() {
+      console.assert(safeUrl("javascript:alert(1)") === "", "应拒绝不安全链接");
+      console.assert(safeRelatedUrl("javascript:alert(1)") === "", "作品链接应拒绝脚本协议");
+      console.assert(safeRelatedUrl("weread://book-detail?bookId=1").startsWith("weread:"), "作品链接应允许微信读书协议");
+      console.assert(matchesFilter({ readingStatus: "reading", favorite: true }, "favorite"), "收藏筛选应命中");
+      console.assert(isWereadHighlight({ origin: "weread", type: "highlight" }) && !isWereadHighlight({ origin: "", type: "highlight" }), "只有微信读书划线应使用原文底纹");
+      console.assert(escapeHtml("<b>") === "&lt;b&gt;", "文本应转义");
+      const imageBlob = dataUrlToBlob("data:image/png;base64,AAE=");
+      console.assert(imageBlob.type === "image/png" && imageBlob.size === 2, "图片应在本机正确转换为二进制文件");
+      const recentLocalState = { updatedAt: "2026-09-19T12:00:01.000Z" };
+      console.assert(newestState({ updatedAt: "2026-09-19T12:00:00.000Z" }, recentLocalState) === recentLocalState, "云端副本暂时较旧时应保留本机最新状态");
+      console.assert(mergeGuestComments([{ id: "one", createdAt: "2026-09-19T00:00:00Z" }], [{ id: "one", createdAt: "2026-09-19T00:00:00Z" }]).length === 1, "访客评论缓存不应重复显示");
+      console.assert(fromTimestamp(1748563200).startsWith("2025-05-30"), "时间戳应按秒转换");
+      const merged = {};
+      setWereadAccountState(merged, "account-a", { favorite: true, readingStatus: "finished" });
+      setWereadAccountState(merged, "account-b", { favorite: false, readingStatus: "reading", lastReadAt: "2026-09-14T00:00:00.000Z" });
+      console.assert(merged.favorite && merged.readingStatus === "reading", "多账号状态应按并集合并");
+      console.assert(bookRecency(merged) > bookRecency({ createdAt: "2026-09-13T00:00:00.000Z" }), "书籍应按最近阅读时间排序");
+      console.assert(bookRecency({ lastNoteAt: "2026-09-14T00:00:00.000Z" }) > bookRecency({ createdAt: "2026-09-13T00:00:00.000Z" }), "没有阅读时间时应按最近笔记时间排序");
+      const commentBackup = normalizeBackup({ books: [{ title: "测试", notes: [{ id: "note-1", comment: "保留评论", commentImages: [{ name: "图", dataUrl: "data:image/png;base64,AA==" }], translation: "保留译文" }] }] });
+      console.assert(commentBackup.books[0].notes[0].comments[0].text === "保留评论", "旧版文字评论应迁移为独立评论");
+      console.assert(commentBackup.books[0].notes[0].comments[0].images.length === 1, "旧版评论图片应随评论迁移");
+      console.assert(commentBackup.books[0].notes[0].translation === "保留译文", "备份应保留白话译文");
+      const separateComments = normalizeOwnerComments({ id: "note-2", comments: [{ text: "文字" }, { images: [{ dataUrl: "data:image/png;base64,AA==" }] }] });
+      console.assert(separateComments.length === 2 && separateComments[0].text === "文字" && separateComments[1].images.length === 1, "后发的图片评论不应覆盖先发的文字评论");
+      const commentRemoval = { comments: [{ id: "one" }, { id: "two" }] };
+      console.assert(takeOwnerComment(commentRemoval, "one").comment.id === "one"
+        && commentRemoval.comments[0].id === "two"
+        && takeOwnerComment(commentRemoval, "missing") === null,
+      "文字或图片评论应能单独删除");
+      const duplicateSafeBook = { notes: [] };
+      addNoteOnce(duplicateSafeBook, { id: "same-note" });
+      addNoteOnce(duplicateSafeBook, { id: "same-note" });
+      console.assert(duplicateSafeBook.notes.length === 1, "同一次保存不能重复添加内容");
+      console.assert(mergeCommentImages([1], [2, 3]).length === 3, "单条评论应保留所选图片");
+      let commentImageLimitWorks = false;
+      try { mergeCommentImages([1, 2], [3, 4]); } catch { commentImageLimitWorks = true; }
+      console.assert(commentImageLimitWorks, "评论图片合计最多三张");
+      console.assert(reorderCommentImages(["一", "二", "三"], [2, 0, 1]).join("") === "三一二", "评论图片应按拖动后的顺序保存");
+      const remoteImages = [{ name: "甲", dataUrl: "data:image/png;base64,AA==" }, { name: "乙", dataUrl: "data:image/png;base64,BB==" }];
+      const desiredImages = [{ ...remoteImages[1] }, { ...remoteImages[0] }];
+      console.assert(matchCommentImageOrder(remoteImages, desiredImages)[0] === remoteImages[1], "版本冲突后应在图片未变化时保留新顺序");
+      const relatedBook = { relatedWorks: [{ id: "old", kind: "book", title: "相关书", sourceBookId: "2", origin: "weread" }] };
+      mergeRelatedWorks(relatedBook, [{ id: "new", kind: "book", title: "相关书新版", sourceBookId: "2", origin: "weread" }]);
+      console.assert(relatedBook.relatedWorks.length === 1 && relatedBook.relatedWorks[0].id === "old", "思链应按书籍标识去重");
+      console.assert(findSameNote({ notes: [{ id: "local", externalId: "weread:1" }] }, { id: "other", externalId: "weread:1" }).id === "local", "云端冲突时应按微信读书内容标识合并评论");
+    }
+
+    (async function start() {
+      selfCheck();
+      try {
+        if (guestMode) {
+          document.body.classList.add("guest-mode");
+          guestNickname = requireGuestNickname();
+          document.querySelector(".eyebrow").textContent = "Personal Reading Notes";
+          document.querySelector(".subtitle").textContent = `欢迎你，${guestNickname}。可以阅读并留下评论。`;
+        }
+        state = normalizeBackup(await loadState());
+        if (!guestMode && cloudStorage && hasInlineImages(state)) {
+          toast("正在优化图片存储…");
+          await externalizeStateImages(state);
+          await saveState();
+        }
+        await loadGuestComments().catch((error) => console.warn(error));
+        if (cloudStorage) $("#storageHint").textContent = "一次最多 5 张；大图会在本机压缩后同步到你的私人云端存储。";
+        renderLibrary();
+        reconcileNewerLocalState().catch((error) => console.warn("自动补同步失败", error));
+      } catch (error) {
+        console.error(error);
+        alert(error.message || "无法读取数据，请稍后重试。");
+      }
+      if (!guestMode) try {
+        const config = await fetch("/api/config").then((response) => response.json());
+        if (!config.wereadConfigured) $("#syncShelfButton").title = "需要先配置微信读书 API Key";
+      } catch { /* 本地数据功能不依赖微信读书接口。 */ }
+    })();
+  </script>
+</body>
+</html>

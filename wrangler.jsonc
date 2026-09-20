@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personal-reading-notes",
+  "main": "cloud/worker.mjs",
+  "compatibility_date": "2026-09-20",
+  "assets": {
+    "directory": "cloud/public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DATA"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "个人阅读笔记",
+  "short_name": "阅读笔记",
+  "description": "私人书架、划线与书评收藏夹",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f8ee",
+  "theme_color": "#f1f8ee",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

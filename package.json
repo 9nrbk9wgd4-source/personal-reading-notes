@@ -1,0 +1,29 @@
+{
+  "name": "personal-reading-notes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test cloud/worker.test.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.133.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "APP_PASSWORD": {
+        "description": "为私人网站设置至少 8 位的登录密码。"
+      },
+      "SESSION_SECRET": {
+        "description": "填写一段至少 32 位、难以猜测的随机字符，用来保护登录状态；请勿与登录密码相同。"
+      },
+      "WEREAD_API_KEY_1": {
+        "description": "填写自己的微信读书 API Key，格式应以 wrk- 开头。"
+      },
+      "GUEST_TOKEN": {
+        "description": "设置一段难以猜测的访客口令。部署后把网址末尾加上 ?guest=访客口令，即可生成访客链接。"
+      }
+    }
+  }
+}
