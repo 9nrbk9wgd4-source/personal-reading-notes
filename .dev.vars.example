@@ -1,0 +1,5 @@
+# Deploy to Cloudflare 会把这些值保存为 Worker Secrets，不会公开在网页源码中。
+APP_PASSWORD=
+SESSION_SECRET=
+WEREAD_API_KEY_1=
+GUEST_TOKEN=
