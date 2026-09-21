@@ -359,6 +359,17 @@
     })[character]);
     const formatDate = (value) => new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(value));
     const isWereadHighlight = (note) => note?.origin === "weread" && note?.type === "highlight";
+    const translationSource = (note) => String(note?.quote || note?.text || "").trim();
+    function looksLikeClassicalChinese(value) {
+      const text = String(value || "").replace(/\s/g, "");
+      const chineseCount = (text.match(/[\u3400-\u9fff]/g) || []).length;
+      if (chineseCount < 6) return false;
+      const strong = (text.match(/曰|矣|焉|哉|兮|岂|孰|吾|汝|乃|遂|毋|弗|寡人|臣闻|君子|何以|何如|不亦|未尝|是以|可谓|无以|有以|呜呼|素与|素善|每相|故免|全佑/g) || []).length;
+      const weak = (text.match(/[之其者也而以于为所何若虽然盖夫亦皆未无]/g) || []).length;
+      const modern = (text.match(/我们|你们|他们|这个|那个|因为|所以|但是|如果|已经|可以|没有|觉得|非常|比较|需要|问题|时候|事情|功能|作者|读者/g) || []).length;
+      // ponytail: 本地启发式避免为识别文言文额外消耗 AI；出现误判时再补充词表。
+      return strong > 0 || (modern === 0 && weak >= Math.max(3, Math.ceil(chineseCount / 12)));
+    }
     const safeUrl = (value) => {
       try {
         const url = new URL(value);
@@ -903,7 +914,7 @@
             </div>
           </form>`}
           <div class="note-footer">
-            ${!guestMode && note.type === "highlight" && (note.text || note.quote) ? `<button class="text-button translate-note" type="button" data-translate-note="${escapeHtml(note.id)}">${note.translation ? "重译" : "译"}</button>` : ""}
+            ${!guestMode && looksLikeClassicalChinese(translationSource(note)) ? `<button class="text-button translate-note" type="button" data-translate-note="${escapeHtml(note.id)}">${note.translation ? "重译" : "译"}</button>` : ""}
             <button class="text-button comment-toggle" type="button" data-toggle-comment aria-expanded="false">评论</button>
           </div>
         </article>`;
@@ -1620,7 +1631,7 @@
         const note = book?.notes.find((item) => item.id === translateButton.dataset.translateNote);
         if (!note) return;
         if (note.translation && !confirm("重新翻译会替换现有白话译文，继续吗？")) return;
-        const source = [note.quote, note.text].filter(Boolean).join("\n").trim();
+        const source = translationSource(note);
         if (!source) return;
         translateButton.disabled = true;
         translateButton.textContent = "翻译中…";
@@ -1644,7 +1655,7 @@
             cloudEtag = error.currentEtag;
             const latestBook = findSameBook(state.books, book);
             targetNote = findSameNote(latestBook, note);
-            if (!latestBook || !targetNote) throw new Error("最新云端数据中找不到这条划线，请重新打开本书后再试。");
+            if (!latestBook || !targetNote) throw new Error("最新云端数据中找不到这条内容，请重新打开本书后再试。");
             activeBookId = latestBook.id;
             previousTranslation = targetNote.translation || "";
             targetNote.translation = translation;
@@ -1907,6 +1918,12 @@
       console.assert(safeRelatedUrl("weread://book-detail?bookId=1").startsWith("weread:"), "作品链接应允许微信读书协议");
       console.assert(matchesFilter({ readingStatus: "reading", favorite: true }, "favorite"), "收藏筛选应命中");
       console.assert(isWereadHighlight({ origin: "weread", type: "highlight" }) && !isWereadHighlight({ origin: "", type: "highlight" }), "只有微信读书划线应使用原文底纹");
+      console.assert(looksLikeClassicalChinese(translationSource({ type: "highlight", text: "学而时习之，不亦说乎？" }))
+        && looksLikeClassicalChinese("太子素与帝善，每相全佑，故免。")
+        && looksLikeClassicalChinese(translationSource({ type: "my_review", quote: "自知必死而守义者，不敢辱先人之教以忘先王也。", text: "我觉得这段话很有力量。" }))
+        && !looksLikeClassicalChinese(translationSource({ type: "my_review", text: "我觉得这个作者写得非常清楚，不需要再翻译。" }))
+        && translationSource({ type: "my_review", quote: "古文原句", text: "现代书评" }) === "古文原句",
+      "翻译入口应只识别文言文，并优先翻译书评引用的原文");
       console.assert(escapeHtml("<b>") === "&lt;b&gt;", "文本应转义");
       const imageBlob = dataUrlToBlob("data:image/png;base64,AAE=");
       console.assert(imageBlob.type === "image/png" && imageBlob.size === 2, "图片应在本机正确转换为二进制文件");
