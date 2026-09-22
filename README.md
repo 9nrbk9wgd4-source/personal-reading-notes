@@ -8,7 +8,7 @@
 
 > 仓库公开后，把下面链接里的 `YOUR_PUBLIC_REPOSITORY_URL` 替换为实际 GitHub 仓库地址。
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=YOUR_PUBLIC_REPOSITORY_URL)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/9nrbk9wgd4-source/personal-reading-notes)
 
 点击按钮后：
 
