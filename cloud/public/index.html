@@ -591,7 +591,7 @@
       const remote = await fetch("/api/state", { headers: { Accept: "application/json" } });
       if (remote.ok) {
         cloudStorage = true;
-        cloudEtag = remote.headers.get("ETag") || "";
+        cloudEtag = remote.headers.get("X-State-Version") || remote.headers.get("ETag") || "";
         const remoteState = await remote.json();
         const localState = await readLocalState().catch(() => null);
         localStateAhead = Boolean(localState && stateUpdatedAt(localState) > stateUpdatedAt(remoteState));
@@ -599,6 +599,18 @@
       }
       if (remote.status !== 404) throw new Error(remote.status === 401 ? "登录已过期，请刷新页面重新登录" : "无法读取云端数据");
       return await readLocalState() || { books: [], updatedAt: "" };
+    }
+
+    async function refreshCloudState() {
+      if (guestMode || !cloudStorage) return;
+      const remote = await fetch("/api/state?refresh=" + Date.now(), {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!remote.ok) throw new Error(remote.status === 401 ? "登录已过期，请刷新页面重新登录" : "无法读取最新云端数据");
+      cloudEtag = remote.headers.get("X-State-Version") || remote.headers.get("ETag") || "";
+      state = normalizeBackup(await remote.json());
+      localStateAhead = false;
     }
 
     async function saveStateNow({ silentConflict = false } = {}) {
@@ -609,7 +621,7 @@
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            ...(cloudEtag ? { "If-Match": cloudEtag } : { "If-None-Match": "*" }),
+            ...(cloudEtag ? { "If-Match": cloudEtag, "X-State-Version": cloudEtag } : { "If-None-Match": "*" }),
           },
           body: JSON.stringify(state),
         });
@@ -621,14 +633,14 @@
           const error = new Error(message);
           error.status = response.status;
           error.currentState = result.currentState;
-          error.currentEtag = response.headers.get("ETag") || "";
+          error.currentEtag = response.headers.get("X-State-Version") || response.headers.get("ETag") || "";
           if (!silentConflict || response.status !== 409) {
             alert(message);
             error.shown = true;
           }
           throw error;
         }
-        cloudEtag = response.headers.get("ETag") || cloudEtag;
+        cloudEtag = response.headers.get("X-State-Version") || response.headers.get("ETag") || cloudEtag;
         await writeLocalState(state).catch((error) => console.warn("无法更新本机云端副本", error));
         return;
       }
@@ -1154,6 +1166,7 @@
       button.disabled = true;
       button.textContent = "正在同步…";
       try {
+        await refreshCloudState();
         const accounts = await getWereadAccounts();
         let bookCount = 0;
         let albumCount = 0;
@@ -1396,7 +1409,7 @@
             creator: String(similar.author || "").trim(),
             reason: "微信读书相似推荐",
             cover: safeUrl(similar.cover || ""),
-            url: safeRelatedUrl(similar.deepLink || item?.deepLink || ""),
+            url: safeRelatedUrl(similar.readerLink || item?.readerLink || similar.deepLink || item?.deepLink || ""),
             sourceBookId: sourceBookId ? String(sourceBookId) : "",
             origin: "weread",
             createdAt: new Date().toISOString(),
