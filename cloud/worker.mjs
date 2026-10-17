@@ -1,5 +1,5 @@
 const GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
-const SKILL_VERSION = "1.0.4";
+const SKILL_VERSION = "1.0.5";
 const STATE_KEY = "state.json";
 const GUEST_COMMENTS_KEY = "guest-comments.json";
 const IMAGE_KEY_PREFIX = "image:";
@@ -113,13 +113,13 @@ function loginPage(error = "") {
   const html = [
     "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">",
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">",
-    "<meta name=\"theme-color\" content=\"#f1f8ee\"><title>登录 · 个人阅读笔记</title>",
+    "<meta name=\"theme-color\" content=\"#f1f8ee\"><title>登录 · 阅读收藏夹</title>",
     "<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;color:#342d27;background:radial-gradient(circle at 10% 0%,#cde9f8,transparent 32rem),#f1f8ee;font-family:-apple-system,BlinkMacSystemFont,\"PingFang SC\",sans-serif}",
     "main{width:min(420px,100%);padding:28px;border:1px solid #c7e6e9;border-radius:20px;background:rgba(241,248,238,.94);box-shadow:0 18px 50px rgba(52,45,39,.1)}",
     "h1{margin:0 0 8px;font:500 34px Georgia,\"Songti SC\",serif}p{color:rgba(52,45,39,.66);line-height:1.6}.error{color:#a43e35}",
     "label{display:grid;gap:8px;margin-top:22px;font-size:14px}input{width:100%;padding:12px;border:1px solid #c7e6e9;border-radius:10px;background:#f1f8ee;font:inherit}",
     "button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:11px;color:#342d27;background:#5fb7b5;font:inherit;cursor:pointer}</style></head>",
-    "<body><main><h1>个人阅读笔记</h1><p>请输入你为这个私人网站设置的访问密码。此设备登录后 30 天内无需重复输入。</p>",
+    "<body><main><h1>阅读收藏夹</h1><p>请输入你为这个私人网站设置的访问密码。此设备登录后 30 天内无需重复输入。</p>",
     errorHtml,
     "<form method=\"post\" action=\"/login\"><label>访问密码<input name=\"password\" type=\"password\" autocomplete=\"current-password\" required autofocus></label>",
     "<button type=\"submit\">登录</button></form></main></body></html>",
@@ -226,6 +226,7 @@ async function handleState(request, env) {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store",
         ETag: etag,
+        "X-State-Version": etag,
       },
     });
   }
@@ -245,20 +246,20 @@ async function handleState(request, env) {
 
   const current = await env.DATA.getWithMetadata(STATE_KEY, "text");
   const currentEtag = current.value === null ? "" : (current.metadata?.etag || await stateEtag(current.value));
-  const ifMatch = request.headers.get("If-Match");
+  const ifMatch = (request.headers.get("X-State-Version") || request.headers.get("If-Match"))?.replace(/^W\//, "");
   const ifNoneMatch = request.headers.get("If-None-Match");
   if ((ifMatch && ifMatch !== currentEtag) || (ifNoneMatch === "*" && current.value !== null)) {
     const currentState = current.value === null ? { books: [] } : JSON.parse(current.value);
     return json(
       { error: "云端数据已在另一台设备更新。", currentState },
       409,
-      currentEtag ? { ETag: currentEtag } : {},
+      currentEtag ? { ETag: currentEtag, "X-State-Version": currentEtag } : {},
     );
   }
 
   const etag = await stateEtag(text);
   await env.DATA.put(STATE_KEY, text, { metadata: { etag } });
-  return json({ ok: true }, 200, { ETag: etag });
+  return json({ ok: true }, 200, { ETag: etag, "X-State-Version": etag });
 }
 
 async function readGuestComments(env) {

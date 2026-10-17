@@ -71,6 +71,7 @@ test("requires login and protects cloud writes with ETags", async () => {
   }), env);
   assert.equal(firstWrite.status, 200);
   const etag = firstWrite.headers.get("ETag");
+  assert.equal(firstWrite.headers.get("X-State-Version"), etag);
   assert.match(etag, /^"[A-Za-z0-9_-]{43}"$/);
 
   const staleWrite = await worker.fetch(new Request("https://example.com/api/state", {
@@ -91,7 +92,8 @@ test("requires login and protects cloud writes with ETags", async () => {
     headers: {
       Cookie: cookie,
       "Content-Type": "application/json",
-      "If-Match": etag,
+      "If-Match": "W/" + etag,
+      "X-State-Version": etag,
     },
     body: JSON.stringify({ books: [{ id: "two", title: "红楼梦" }] }),
   }), env);
